@@ -42,6 +42,17 @@ npm run dev
 
 O chat (conversas e mensagens) fica na base; o rate limit de mensagens/registo é **em memória por processo** (ver comentários em `src/server/rate-limit.ts`).
 
+### Erro: `Cannot read properties of undefined (reading 'findMany')` em `prisma.conversation`
+
+O cliente Prisma em `node_modules` está **desatualizado** em relação ao `schema.prisma` (por exemplo após `git pull`). Faz:
+
+1. Para o servidor: `Ctrl+C` no terminal do `npm run dev`.
+2. `npx prisma generate`
+3. `npx prisma migrate deploy` (se houver migrações novas)
+4. Volta a arrancar: `npm run dev`
+
+O Node mantém em cache o módulo `@prisma/client` antigo até reiniciares o processo do Next.
+
 Abre [http://localhost:3000](http://localhost:3000) → redireciona para `/chat`; se não estiveres autenticado, vais para `/login`. Cria conta em `/register` ou faz login.
 
 ### Comandos úteis
