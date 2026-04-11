@@ -1,0 +1,11 @@
+.DS_Store
+*.log
+
+# App (monorepo leve: código em apps/web)
+apps/web/node_modules/
+apps/web/.next/
+apps/web/out/
+apps/web/.vercel
+apps/web/*.tsbuildinfo
+apps/web/.env
+apps/web/.env.local
