@@ -20,6 +20,12 @@ npm run build
 
 Copie `.env.example` para `.env.local`. Sem `OPENAI_API_KEY`, o chat usa **resposta mockada** para desenvolvimento.
 
+Na Vercel, configure as mesmas variáveis em **Project → Settings → Environment Variables** (não commitar segredos).
+
+## Deploy
+
+URL atual do ambiente hospedado: ver **Contatos / links úteis** em [`docs/04-estado-do-projeto.md`](../../docs/04-estado-do-projeto.md). **Root Directory** do projeto na Vercel: `apps/web`.
+
 ## Estrutura principal
 
 | Caminho | Função |

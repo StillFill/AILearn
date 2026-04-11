@@ -1,6 +1,6 @@
 # Estado do projeto (fonte da verdade operacional)
 
-**Última atualização:** 2026-04-10 (app `apps/web`)  
+**Última atualização:** 2026-04-10 — deploy Vercel documentado  
 **Mantenedor:** preencher nome/equipe
 
 > **Instrução para humanos e para agentes de IA (Cursor):** ao concluir uma tarefa substancial, marque os checkboxes abaixo e adicione uma linha em **Histórico de alterações**. Se uma decisão mudar arquitetura ou escopo, atualize também `03-arquitetura-tecnica.md` ou `01-visao-e-objetivos.md`.
@@ -38,7 +38,7 @@
 - [x] Repositório de aplicação inicializado (`apps/web`, Next.js 16)
 - [x] `README` técnico com comandos dev/build/test (`apps/web/README.md` + README raiz)
 - [x] Lint + CI (GitHub Actions em `.github/workflows/ci.yml`)
-- [ ] Deploy staging
+- [x] Deploy Vercel (URL em **Contatos / links úteis**; domínio estável do projeto pode ser adicionado depois)
 - [x] `.env.example` documentado (`apps/web/.env.example`)
 
 ### P2 — Autenticação e dados de usuário
@@ -81,15 +81,15 @@
 |------|--------|
 | Documentação estratégica e técnica | **Feito** (P0) |
 | Código frontend + BFF Next (`apps/web`) | **Iniciado** (P1 parcial, P3 parcial) |
-| Infraestrutura | **Staging não configurado** |
+| Infraestrutura | **Vercel** — deploy ativo (ver URL abaixo) |
 
 ---
 
 ## Próximo passo recomendado (ordem)
 
-1. **P1:** Configurar deploy staging (Vercel ou similar) para `apps/web`.
-2. **P2:** Implementar auth e modelo de usuário mínimo (substituir `dev-user`).
-3. **P3:** PostgreSQL + rate limit + (opcional) SSE no `POST .../messages`.
+1. **P2:** Implementar auth e modelo de usuário mínimo (substituir `dev-user`).
+2. **P3:** PostgreSQL + rate limit + (opcional) SSE no `POST .../messages`.
+3. **P1 (opcional):** associar domínio estável (`*.vercel.app` de produção ou domínio próprio) e variáveis de ambiente na Vercel (`OPENAI_API_KEY`, etc.).
 
 ---
 
@@ -97,6 +97,7 @@
 
 | Data | Decisão |
 |------|---------|
+| 2026-04-10 | Deploy na Vercel; URL atual documentada em **Contatos / links úteis** (subdomínio longo = deploy/projeto no painel). |
 | 2026-04-10 | App Next.js em `apps/web`: BFF `/api/v1`, chat UI básica, store em memória, LLM mock ou OpenAI opcional. |
 | 2026-04-10 | Criação do pacote de documentação inicial; MVP centrado em chat + IA; assinatura prevista após núcleo de chat. |
 
@@ -106,6 +107,7 @@
 
 ## Histórico de alterações (engenharia)
 
+- **2026-04-10:** URL de deploy Vercel registrada; app público em ambiente hospedado (dados de chat ainda em memória no servidor).
 - **2026-04-10:** Scaffold `apps/web` (Next 16), rotas BFF, componentes de chat, CI; persistência ainda em memória.
 - **2026-04-10:** Estrutura `docs/` e README raiz criados; nenhum código de aplicação.
 
@@ -122,4 +124,4 @@
 - Repositório Git: [https://github.com/StillFill/AILearn](https://github.com/StillFill/AILearn)
 - Design / Figma: *a preencher*
 - Painel Stripe: *a preencher*
-- Staging URL: *a preencher*
+- Deploy Vercel (produção atual): [https://ai-learn-7ko00erej-maujsgregorio-8983s-projects.vercel.app/](https://ai-learn-7ko00erej-maujsgregorio-8983s-projects.vercel.app/) — *subdomínio de equipe/projeto; pode haver também um domínio `*.vercel.app` curto no painel “Domains”.*
