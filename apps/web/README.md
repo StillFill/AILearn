@@ -2,38 +2,70 @@
 
 Next.js (App Router) + TypeScript + Tailwind. O **BFF** vive em `src/app/api/v1/`; chaves de LLM ficam só no servidor.
 
-## Comandos
+---
+
+## Desenvolvimento local (passo a passo)
+
+No teu PC precisas de:
+
+1. **Node.js** 20 ou 22 (recomendado; alinhado ao CI).
+2. **PostgreSQL acessível** — uma destas opções:
+   - **Docker Desktop** (Windows/macOS): na pasta `apps/web`, `docker compose up -d` (usa o `docker-compose.yml` deste repo).
+   - **PostgreSQL instalado** localmente, com uma base e utilizador criados por ti.
+   - **Base na nuvem** (ex.: [Neon](https://neon.tech) grátis): copias a connection string para `DATABASE_URL`.
+
+Não é obrigatório ter o OpenAI a correr no PC; o chat funciona em modo **mock** sem `OPENAI_API_KEY`.
+
+### Comandos (primeira vez)
+
+Na pasta `apps/web`:
 
 ```bash
 npm install
+```
+
+Cria `apps/web/.env.local` (podes copiar de `.env.example`) e define **obrigatoriamente**:
+
+| Variável | Descrição |
+|----------|-----------|
+| `DATABASE_URL` | Ex. com Docker deste repo: `postgresql://smartlearn:smartlearn@localhost:5432/smartlearn` |
+| `AUTH_SECRET` | String longa e aleatória (mín. ~32 caracteres). Ex.: `openssl rand -base64 32` |
+
+Opcional: `OPENAI_API_KEY` — respostas reais do modelo no servidor.
+
+Com o Postgres **já a aceitar ligações** (Docker `healthy` ou serviço local), **após cada `git pull` que traga migrações novas**:
+
+```bash
+npx prisma migrate deploy
 npm run dev
 ```
 
-Abra [http://localhost:3000](http://localhost:3000) (redireciona para `/chat`).
+O chat (conversas e mensagens) fica na base; o rate limit de mensagens/registo é **em memória por processo** (ver comentários em `src/server/rate-limit.ts`).
+
+Abre [http://localhost:3000](http://localhost:3000) → redireciona para `/chat`; se não estiveres autenticado, vais para `/login`. Cria conta em `/register` ou faz login.
+
+### Comandos úteis
 
 ```bash
 npm run lint
 npm run build
+npm run db:studio    # UI Prisma para inspecionar tabelas (com DATABASE_URL válido)
+docker compose down  # para o Postgres local do Docker
 ```
 
-## Variáveis de ambiente
+---
 
-Copie `.env.example` para `.env.local`. Obrigatório para a app:
+## Variáveis de ambiente (referência)
 
-- `DATABASE_URL` — PostgreSQL (ex.: [Neon](https://neon.tech) grátis).
-- `AUTH_SECRET` — string longa e aleatória (ex.: `openssl rand -base64 32`).
+Ver `.env.example`. Resumo: `DATABASE_URL`, `AUTH_SECRET`; opcional `OPENAI_API_KEY` e `OPENAI_CHAT_MODEL`.
 
-Opcional: `OPENAI_API_KEY` — sem ela, o chat usa resposta **mock** no servidor.
+---
 
-Na Vercel: **Settings → Environment Variables** com os mesmos nomes. **Build Command** recomendado:
+## Deploy na Vercel e CI no GitHub
 
-`npx prisma migrate deploy && npm run build`
+A configuração que **depende da tua conta / painéis** (variáveis, build command, domínio) está tratada como **pendente manual** em [`docs/04-estado-do-projeto.md`](../docs/04-estado-do-projeto.md#configuração-externa-pendente-fazer-depois) — não está automatizada no repositório.
 
-(assim a base é migrada em cada deploy; requer `DATABASE_URL` disponível no passo de build.)
-
-## Deploy
-
-URL atual do ambiente hospedado: ver **Contatos / links úteis** em [`docs/04-estado-do-projeto.md`](../../docs/04-estado-do-projeto.md). **Root Directory** na Vercel: `apps/web`.
+---
 
 ## Autenticação (P2)
 
@@ -41,6 +73,8 @@ URL atual do ambiente hospedado: ver **Contatos / links úteis** em [`docs/04-es
 - Rotas: `/login`, `/register`, `/terms` (rascunho). Área autenticada: `/chat`, `/settings` (redirect se não houver sessão).
 - API `POST /api/auth/register` cria utilizador (email, senha, nome, perfil `STUDENT` | `GUARDIAN`, aceite de termos).
 - BFF `/api/v1/...` exige cookie de sessão (`credentials: "include"` no cliente).
+
+---
 
 ## Estrutura principal
 
@@ -54,12 +88,4 @@ URL atual do ambiente hospedado: ver **Contatos / links úteis** em [`docs/04-es
 | `src/auth.ts` | Configuração NextAuth |
 | `src/components/chat/` | `ChatThread`, `MessageList`, `Composer`, `ModelNotice` |
 | `src/lib/api/v1-client.ts` | Cliente HTTP do browser para o BFF |
-
-## Base de dados local
-
-Com Postgres a correr (porta 5432) e `DATABASE_URL` apontando para a BD:
-
-```bash
-npx prisma migrate deploy
-npm run dev
-```
+| `docker-compose.yml` | Postgres opcional para desenvolvimento local |

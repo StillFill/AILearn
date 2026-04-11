@@ -3,8 +3,28 @@ import bcrypt from "bcryptjs";
 import { ProfileRole } from "@prisma/client";
 import { jsonError } from "@/lib/api/errors";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit, getClientIp, rateLimitKey } from "@/server/rate-limit";
+
+function registerLimit(): { max: number; windowMs: number } {
+  const max = Number(process.env.RATE_LIMIT_REGISTER_PER_WINDOW ?? 10);
+  const windowMs = Number(process.env.RATE_LIMIT_REGISTER_WINDOW_MS ?? 900_000);
+  return {
+    max: Number.isFinite(max) && max > 0 ? max : 10,
+    windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : 900_000,
+  };
+}
 
 export async function POST(request: NextRequest) {
+  const { max, windowMs } = registerLimit();
+  const ip = getClientIp(request);
+  if (!checkRateLimit(rateLimitKey("register", ip), max, windowMs)) {
+    return jsonError(
+      429,
+      "rate_limited",
+      "Muitas tentativas de registo a partir desta rede. Tenta mais tarde.",
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();

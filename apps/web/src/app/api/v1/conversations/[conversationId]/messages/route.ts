@@ -8,8 +8,15 @@ import {
   setConversationModel,
 } from "@/server/conversation-store";
 import { generateAssistantReply } from "@/server/llm/generate-reply";
+import { checkRateLimit, rateLimitKey } from "@/server/rate-limit";
 
 type Ctx = { params: Promise<{ conversationId: string }> };
+
+function chatMessageLimit(): { max: number; windowMs: number } {
+  const max = Number(process.env.RATE_LIMIT_CHAT_MESSAGES_PER_MIN ?? 40);
+  const windowMs = 60_000;
+  return { max: Number.isFinite(max) && max > 0 ? max : 40, windowMs };
+}
 
 export async function GET(_request: NextRequest, context: Ctx) {
   const { conversationId } = await context.params;
@@ -17,7 +24,7 @@ export async function GET(_request: NextRequest, context: Ctx) {
   if (!ownerUserId) {
     return jsonError(401, "unauthorized", "Sessão necessária.");
   }
-  const messages = getMessages(conversationId, ownerUserId);
+  const messages = await getMessages(conversationId, ownerUserId);
   if (messages === null) {
     return jsonError(404, "not_found", "Conversa não encontrada");
   }
@@ -31,7 +38,13 @@ export async function POST(request: NextRequest, context: Ctx) {
     return jsonError(401, "unauthorized", "Sessão necessária.");
   }
 
-  if (!getConversation(conversationId, ownerUserId)) {
+  const { max, windowMs } = chatMessageLimit();
+  const rlKey = rateLimitKey("chat-msg", ownerUserId);
+  if (!checkRateLimit(rlKey, max, windowMs)) {
+    return jsonError(429, "rate_limited", "Muitas mensagens por minuto. Aguarda um momento.");
+  }
+
+  if (!(await getConversation(conversationId, ownerUserId))) {
     return jsonError(404, "not_found", "Conversa não encontrada");
   }
 
@@ -54,8 +67,8 @@ export async function POST(request: NextRequest, context: Ctx) {
     return jsonError(400, "validation_error", "Campo content é obrigatório");
   }
 
-  const prior = getMessages(conversationId, ownerUserId) ?? [];
-  const userMsg = appendMessage(conversationId, ownerUserId, "user", content);
+  const prior = (await getMessages(conversationId, ownerUserId)) ?? [];
+  const userMsg = await appendMessage(conversationId, ownerUserId, "user", content);
   if (!userMsg) {
     return jsonError(500, "persist_failed", "Não foi possível salvar a mensagem");
   }
@@ -67,9 +80,9 @@ export async function POST(request: NextRequest, context: Ctx) {
       userContent: content,
     });
 
-    setConversationModel(conversationId, ownerUserId, reply.model);
+    await setConversationModel(conversationId, ownerUserId, reply.model);
 
-    const assistantMsg = appendMessage(
+    const assistantMsg = await appendMessage(
       conversationId,
       ownerUserId,
       "assistant",

@@ -8,7 +8,7 @@ export async function GET() {
   if (!ownerUserId) {
     return jsonError(401, "unauthorized", "Sessão necessária.");
   }
-  const items = listConversations(ownerUserId);
+  const items = await listConversations(ownerUserId);
   return NextResponse.json({ conversations: items });
 }
 
@@ -31,6 +31,6 @@ export async function POST(request: NextRequest) {
       ? (body as { title: string }).title
       : null;
 
-  const conversation = createConversation(ownerUserId, title);
+  const conversation = await createConversation(ownerUserId, title);
   return NextResponse.json({ conversation }, { status: 201 });
 }

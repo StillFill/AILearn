@@ -21,7 +21,7 @@ Use este arquivo como **atalho** antes de implementar qualquer coisa neste repos
 ## 3. Estado atual do repositório (até alguém atualizar)
 
 - **Documentação:** `docs/` + `README.md` na raiz.
-- **Aplicação:** `apps/web/` — Next.js, BFF `/api/v1`, NextAuth + Prisma (`User` em Postgres), chat **em memória** por utilizador. Próximo: P3 (mensagens em PG + rate limit) — ver `04-estado-do-projeto.md`.
+- **Aplicação:** `apps/web/` — Next.js, BFF `/api/v1`, NextAuth + Prisma (`User`, `Conversation`, `Message` em Postgres), rate limit em memória. Próximo: SSE opcional, P4/P5 — ver `04-estado-do-projeto.md`.
 
 ---
 

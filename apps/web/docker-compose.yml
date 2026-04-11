@@ -1,0 +1,24 @@
+# Postgres apenas para desenvolvimento local.
+# Uso: na pasta apps/web → `docker compose up -d`
+# DATABASE_URL em .env.local:
+# postgresql://smartlearn:smartlearn@localhost:5432/smartlearn
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: smartlearn
+      POSTGRES_PASSWORD: smartlearn
+      POSTGRES_DB: smartlearn
+    ports:
+      - "5432:5432"
+    volumes:
+      - smartlearn_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartlearn -d smartlearn"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  smartlearn_pg_data:

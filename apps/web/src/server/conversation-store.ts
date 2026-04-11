@@ -1,13 +1,7 @@
-import { randomUUID } from "crypto";
+import { MessageRole as PrismaMessageRole } from "@prisma/client";
 import type { Conversation, ConversationWithMeta, Message } from "@/domain/chat";
+import { prisma } from "@/lib/prisma";
 import { PROMPT_VERSION } from "@/server/prompts/system";
-
-/**
- * Persistência em memória (processo único).
- * TODO (P3): trocar por PostgreSQL + repositório injetável.
- */
-const conversations = new Map<string, Conversation>();
-const messagesByConversation = new Map<string, Message[]>();
 
 const DEFAULT_MODEL = "mock-llm";
 
@@ -16,81 +10,161 @@ function preview(text: string, max = 80): string {
   return t.length <= max ? t : `${t.slice(0, max)}…`;
 }
 
-export function listConversations(ownerUserId: string): ConversationWithMeta[] {
-  const list = [...conversations.values()].filter((c) => c.ownerUserId === ownerUserId);
-  list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return list.map((c) => {
-    const msgs = messagesByConversation.get(c.id) ?? [];
-    const last = msgs.filter((m) => m.role !== "system").at(-1);
+function toPrismaRole(r: Message["role"]): PrismaMessageRole {
+  switch (r) {
+    case "user":
+      return PrismaMessageRole.USER;
+    case "assistant":
+      return PrismaMessageRole.ASSISTANT;
+    case "system":
+      return PrismaMessageRole.SYSTEM;
+    default:
+      return PrismaMessageRole.USER;
+  }
+}
+
+function fromPrismaRole(r: PrismaMessageRole): Message["role"] {
+  switch (r) {
+    case PrismaMessageRole.USER:
+      return "user";
+    case PrismaMessageRole.ASSISTANT:
+      return "assistant";
+    case PrismaMessageRole.SYSTEM:
+      return "system";
+    default:
+      return "user";
+  }
+}
+
+function toDomainMessage(m: {
+  id: string;
+  conversationId: string;
+  role: PrismaMessageRole;
+  content: string;
+  createdAt: Date;
+  tokenCount: number | null;
+}): Message {
+  return {
+    id: m.id,
+    conversationId: m.conversationId,
+    role: fromPrismaRole(m.role),
+    content: m.content,
+    createdAt: m.createdAt.toISOString(),
+    tokenCount: m.tokenCount ?? undefined,
+  };
+}
+
+function toDomainConversation(c: {
+  id: string;
+  ownerUserId: string;
+  title: string | null;
+  model: string;
+  promptVersion: string;
+  createdAt: Date;
+}): Conversation {
+  return {
+    id: c.id,
+    ownerUserId: c.ownerUserId,
+    title: c.title,
+    model: c.model,
+    promptVersion: c.promptVersion,
+    createdAt: c.createdAt.toISOString(),
+  };
+}
+
+export async function listConversations(ownerUserId: string): Promise<ConversationWithMeta[]> {
+  const convs = await prisma.conversation.findMany({
+    where: { ownerUserId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      messages: {
+        where: { role: { not: PrismaMessageRole.SYSTEM } },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  return convs.map((c) => {
+    const last = c.messages[0];
     return {
-      ...c,
+      ...toDomainConversation(c),
       lastMessagePreview: last ? preview(last.content) : null,
     };
   });
 }
 
-export function getConversation(
+export async function getConversation(
   conversationId: string,
   ownerUserId: string,
-): Conversation | null {
-  const c = conversations.get(conversationId);
-  if (!c || c.ownerUserId !== ownerUserId) return null;
-  return c;
+): Promise<Conversation | null> {
+  const c = await prisma.conversation.findFirst({
+    where: { id: conversationId, ownerUserId },
+  });
+  return c ? toDomainConversation(c) : null;
 }
 
-export function createConversation(
+export async function createConversation(
   ownerUserId: string,
   title: string | null,
-): Conversation {
-  const id = randomUUID();
-  const now = new Date().toISOString();
-  const conv: Conversation = {
-    id,
-    ownerUserId,
-    title: title?.trim() || null,
-    model: DEFAULT_MODEL,
-    promptVersion: PROMPT_VERSION,
-    createdAt: now,
-  };
-  conversations.set(id, conv);
-  messagesByConversation.set(id, []);
-  return conv;
+): Promise<Conversation> {
+  const c = await prisma.conversation.create({
+    data: {
+      ownerUserId,
+      title: title?.trim() || null,
+      model: DEFAULT_MODEL,
+      promptVersion: PROMPT_VERSION,
+    },
+  });
+  return toDomainConversation(c);
 }
 
-export function getMessages(
+export async function getMessages(
   conversationId: string,
   ownerUserId: string,
-): Message[] | null {
-  const c = getConversation(conversationId, ownerUserId);
+): Promise<Message[] | null> {
+  const c = await prisma.conversation.findFirst({
+    where: { id: conversationId, ownerUserId },
+    select: { id: true },
+  });
   if (!c) return null;
-  return [...(messagesByConversation.get(conversationId) ?? [])].sort((a, b) =>
-    a.createdAt.localeCompare(b.createdAt),
-  );
+
+  const rows = await prisma.message.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: "asc" },
+  });
+  return rows.map(toDomainMessage);
 }
 
-export function appendMessage(
+export async function appendMessage(
   conversationId: string,
   ownerUserId: string,
   role: Message["role"],
   content: string,
-): Message | null {
-  const c = getConversation(conversationId, ownerUserId);
+): Promise<Message | null> {
+  const c = await prisma.conversation.findFirst({
+    where: { id: conversationId, ownerUserId },
+    select: { id: true },
+  });
   if (!c) return null;
-  const msg: Message = {
-    id: randomUUID(),
-    conversationId,
-    role,
-    content,
-    createdAt: new Date().toISOString(),
-  };
-  const list = messagesByConversation.get(conversationId) ?? [];
-  list.push(msg);
-  messagesByConversation.set(conversationId, list);
-  return msg;
+
+  const m = await prisma.message.create({
+    data: {
+      conversationId,
+      role: toPrismaRole(role),
+      content,
+    },
+  });
+  return toDomainMessage(m);
 }
 
-export function setConversationModel(conversationId: string, ownerUserId: string, model: string) {
-  const c = getConversation(conversationId, ownerUserId);
-  if (!c) return;
-  conversations.set(conversationId, { ...c, model });
+export async function setConversationModel(
+  conversationId: string,
+  ownerUserId: string,
+  model: string,
+): Promise<void> {
+  await prisma.conversation.updateMany({
+    where: { id: conversationId, ownerUserId },
+    data: { model },
+  });
 }

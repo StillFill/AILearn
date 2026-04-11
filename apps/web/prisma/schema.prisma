@@ -12,13 +12,46 @@ enum ProfileRole {
   GUARDIAN
 }
 
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
 model User {
-  id              String      @id @default(cuid())
-  email           String      @unique
+  id              String          @id @default(cuid())
+  email           String          @unique
   passwordHash    String
   name            String
   role            ProfileRole
   termsAcceptedAt DateTime
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  conversations   Conversation[]
+}
+
+model Conversation {
+  id             String    @id @default(cuid())
+  ownerUserId    String
+  owner          User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  title          String?
+  model          String    @default("mock-llm")
+  promptVersion  String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  messages       Message[]
+
+  @@index([ownerUserId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           MessageRole
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+  tokenCount     Int?
+
+  @@index([conversationId])
 }

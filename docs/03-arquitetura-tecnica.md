@@ -44,8 +44,8 @@ Entidades mínimas para o MVP:
 - **User (implementado em Prisma):** id, email, passwordHash, name, role (`STUDENT` \| `GUARDIAN`), termsAcceptedAt, createdAt. *Perfil e consentimento estão no mesmo modelo por simplicidade do MVP.*
 - **Profile (doc original):** pode evoluir para tabela separada (`user_id`, `display_name`, …) se necessário.
 - **Subscription:** user_id ou family_id, plan_id, status, period_end, external_customer_id.
-- **Conversation:** id, owner_user_id, title (opcional), model, prompt_version, created_at.
-- **Message:** id, conversation_id, role (`user` | `assistant` | `system`), content, token_count (opcional), created_at.
+- **Conversation (Prisma):** id, `ownerUserId` → `User`, title, model, promptVersion, timestamps.
+- **Message (Prisma):** id, `conversationId` → `Conversation`, role (`USER` \| `ASSISTANT` \| `SYSTEM` na BD; API em minúsculas), content, tokenCount opcional, createdAt.
 
 Campos adicionais (auditoria, moderação):
 
