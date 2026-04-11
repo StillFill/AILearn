@@ -70,6 +70,8 @@ Princípios:
 
 - Se o LLM processar dados fora do Brasil, documentar e refletir na política (cláusulas contratuais padrão, DPA com provedor, etc.).
 
+**Perfil declarado e inferências (roadmap):** quando existir **cadastro pedagógico** (dificuldades, objectivos, interesses), tratar como dado pessoal com finalidade explícita na política. **Scores ou níveis de progresso** calculados a partir dos chats são **inferências**; a experiência deve **não apresentar** o score como avaliação escolar oficial, permitir **correção ou contextualização** pelo aluno/responsável, e evitar decisões automáticas de alto impacto (ex.: exclusão de funcionalidades) só com base no modelo sem revisão humana ou regra de produto clara.
+
 ---
 
 ## 5. Segurança da aplicação

@@ -1,6 +1,6 @@
 # Estado do projeto (fonte da verdade operacional)
 
-**Última atualização:** 2026-04-10 — guia local + pendências Vercel/CI  
+**Última atualização:** 2026-04-10 — guia local + pendências Vercel/CI + roadmap (perguntas diárias, cadastro pedagógico, scores)  
 **Mantenedor:** preencher nome/equipe
 
 > **Instrução para humanos e para agentes de IA (Cursor):** ao concluir uma tarefa substancial, marque os checkboxes abaixo e adicione uma linha em **Histórico de alterações**. Se uma decisão mudar arquitetura ou escopo, atualize também `03-arquitetura-tecnica.md` ou `01-visao-e-objetivos.md`.
@@ -13,11 +13,11 @@
 |----|------|-------------------|
 | P0 | Documentação | Visão, plano, arquitetura, segurança |
 | P1 | Setup código | Repo app, CI, staging |
-| P2 | Auth & perfis | Login, papéis, consentimento |
+| P2 | Auth & perfis | Login, papéis, consentimento; **roadmap:** perfil pedagógico no cadastro |
 | P3 | Chat + LLM | UI, API, streaming, prompts |
 | P4 | Assinaturas | Stripe, planos, limites |
 | P5 | Segurança | Moderação, testes, runbooks |
-| P6 | Extensões | Vestibular, trilhas, relatórios |
+| P6 | Extensões | Vestibular, trilhas, relatórios, **scores por assunto**, **perguntas diárias** (chat + cadastro) |
 
 ---
 
@@ -47,6 +47,7 @@
 - [x] Registro/login (NextAuth v5 + credenciais; `/login`, `/register`, `POST /api/auth/register`)
 - [x] Perfis mínimos (`STUDENT` | `GUARDIAN` na tabela `User` via Prisma)
 - [x] Fluxo de consentimento na UI (checkbox + página `/terms` rascunho; revisão jurídica ainda pendente em P0)
+- [ ] **Cadastro / conta:** campos pedagógicos obrigatórios (ou fortemente encorajados) — **dificuldades**, **o que quer aprender**, **interesses em aprender coisas novas**; ver `02-plano-de-desenvolvimento.md` (Fase 2, evolução planeada)
 
 ### P3 — Chat e aprendizado (core)
 
@@ -55,6 +56,8 @@
 - [x] Integração LLM server-side (mock + OpenAI opcional via `OPENAI_API_KEY`)
 - [x] System prompt versionado (`PROMPT_VERSION` em `apps/web/src/server/prompts/system.ts`)
 - [x] Limite técnico de taxa (rate limit em memória: chat por utilizador; registo por IP — ver `.env.example`)
+- [x] Leitura em voz das respostas do assistente (Web Speech no browser por omissão; **OpenAI TTS** no BFF pronto mas desativado — `OPENAI_TTS_ENABLED`)
+- [ ] **Go-live:** ativar **speech premium** (OpenAI TTS em produção) nos passos finais antes do lançamento — ver [Go-live: speech premium](#go-live-speech-premium-tts-openai)
 - [ ] (Opcional) SSE no `POST .../messages`
 
 ### P4 — Monetização
@@ -71,6 +74,8 @@
 
 ### P6 — Extensões (pós-MVP)
 
+- [ ] **Score de progresso por assunto** (quão avançado o aluno parece estar em cada tema), **actualizado com análises dos chats** e alinhado ao **perfil declarado** no cadastro; UI transparente — `02-plano-de-desenvolvimento.md` (Fase 6)
+- [ ] **Perguntas diárias** para o aluno (novo lote a cada início de dia), geradas a partir do **histórico de chats**, do **mapeamento de dificuldades** e dos **dados de cadastro**; detalhe em `02-plano-de-desenvolvimento.md` (Fase 6) e `01-visao-e-objetivos.md`
 - [ ] “Modo vestibular” ou similar
 - [ ] Trilhas / tópicos curados
 - [ ] Relatórios para responsáveis
@@ -95,10 +100,20 @@
 
 ---
 
+## Go-live: speech premium (TTS OpenAI)
+
+Nos **passos finais antes do lançamento** (checklist de produção / cutover), prevê-se **ligar o speech premium**: ativar o TTS via OpenAI no ambiente de produção (`OPENAI_TTS_ENABLED=true`, `OPENAI_API_KEY` e, se necessário, `OPENAI_TTS_MODEL` / `OPENAI_TTS_VOICE` conforme `apps/web/.env.example`). Até lá, em desenvolvimento e staging, pode manter-se **desligado** para poupar custo e iterar com **Web Speech** no browser. O código e o BFF já suportam a troca só por configuração e variáveis na Vercel.
+
+---
+
 ## Decisões registradas (changelog de produto/eng)
 
 | Data | Decisão |
 |------|---------|
+| 2026-04-10 | **Roadmap:** cadastro com **dificuldades / objectivos / interesses**; **score por assunto** (chats + perfil declarado); **perguntas diárias** (reset diário) articuladas com chats + declarações — ver Fases 2 (evolução) e 6 em `02-plano-de-desenvolvimento.md`. |
+| 2026-04-10 | **Go-live:** speech premium (OpenAI TTS) fica **desligado** durante a maior parte do desenvolvimento; nos passos finais antes do lançamento público, **ativar** `OPENAI_TTS_ENABLED` (e chave) em produção para a experiência de voz final. |
+| 2026-04-10 | P3: TTS **OpenAI** (`POST /api/v1/tts`) implementado atrás de `OPENAI_TTS_ENABLED` (default off); com flag off o cliente usa **Web Speech**; com flag on + `OPENAI_API_KEY`, áudio MP3 no servidor (fallback nativo se o pedido falhar). |
+| 2026-04-10 | P3: leitura em voz no chat via **Web Speech API** (`speechSynthesis`): só no cliente, voz do SO/browser, texto derivado do Markdown com utilitário leve (sem API de TTS paga). |
 | 2026-04-10 | P3: `Conversation` + `Message` em PostgreSQL; rate limit (chat/registo); store em memória removido para chat. |
 | 2026-04-10 | P2: NextAuth + Prisma + Postgres (`User`), registo/login, consentimento UI; BFF exige sessão. |
 | 2026-04-10 | Deploy na Vercel; URL atual documentada em **Contatos / links úteis** (subdomínio longo = deploy/projeto no painel). |
@@ -111,6 +126,10 @@
 
 ## Histórico de alterações (engenharia)
 
+- **2026-04-10:** Roadmap: cadastro pedagógico, score por assunto (chats + declarado), perguntas diárias; P2/P6, visão e plano actualizados.
+- **2026-04-10:** Documentado: speech premium (OpenAI TTS) a ligar nos passos finais antes do go-live; checklist P3 atualizado.
+- **2026-04-10:** BFF `GET/POST /api/v1/tts` + `OPENAI_TTS_*` (TTS OpenAI desligado por omissão; UI prefere API quando ativo, senão Web Speech).
+- **2026-04-10:** Chat — botão “ouvir resposta” nas mensagens do assistente (TTS no browser com Web Speech API; `pt-BR`).
 - **2026-04-10:** P3 chat persistido em PG + rate limit; nova migração `20260410140000_conversations_messages`.
 - **2026-04-10:** P2 autenticação (NextAuth, Prisma `User`, páginas login/registo/termos); CI com Postgres para migrações.
 - **2026-04-10:** URL de deploy Vercel registrada; app público em ambiente hospedado (dados de chat ainda em memória no servidor).

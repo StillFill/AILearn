@@ -94,7 +94,7 @@ Detalhar schemas JSON em um OpenAPI/Swagger na Fase 1–2 do código.
 - `app/(auth)/` — login, registro
 - `app/(app)/chat/` — interface principal
 - `app/(app)/settings/` — conta, plano, privacidade
-- Componentes: `ChatThread`, `MessageList`, `Composer`, `ModelNotice` (aviso de IA)
+- Componentes: `ChatThread`, `MessageList`, `Composer`, `ModelNotice` (aviso de IA); leitura em voz: **Web Speech** no cliente por omissão; opcional **OpenAI TTS** no BFF (`POST /api/v1/tts`, `OPENAI_TTS_ENABLED`) com chave só no servidor
 
 ### 7.1 Estrutura real no repositório (`apps/web`)
 
@@ -104,6 +104,7 @@ Detalhar schemas JSON em um OpenAPI/Swagger na Fase 1–2 do código.
 | `apps/web/src/app/(app)/settings/` | Placeholder conta/plano |
 | `apps/web/src/app/(auth)/login/` | Placeholder login |
 | `apps/web/src/app/api/v1/conversations/` | BFF: CRUD conversas + mensagens |
+| `apps/web/src/app/api/v1/tts/` | TTS OpenAI (MP3): `status` + `POST` — só ativo com `OPENAI_TTS_ENABLED` + chave |
 | `apps/web/src/app/api/v1/billing/checkout/` | Placeholder até P4 |
 | `apps/web/src/app/api/v1/webhooks/stripe/` | Placeholder até P4 |
 | `apps/web/src/domain/` | Tipos `Conversation`, `Message`, etc. |
@@ -126,6 +127,9 @@ Resposta do assistente no MVP de código: **JSON na mesma requisição** `POST .
 
 ## 9. Evolução técnica planejada
 
+- **Perfil pedagógico no registo (futuro, extensão P2):** campos no `User` ou tabela `UserLearningProfile` (dificuldades, objectivos, interesses); validação e i18n na UI de `/register` e `/settings`.
+- **Score por assunto (futuro, P6):** entidade ou série temporal (ex.: `UserTopicProgress` / snapshots) actualizada por **job de análise** sobre mensagens do utilizador + ligação aos tópicos declarados; API de leitura para UI e regras de não-exposição a terceiros sem consentimento.
+- **Perguntas diárias (futuro, P6):** job agendado ou fila que, por utilizador e **janela calendário (dia)**, gera um lote de perguntas via LLM com contexto derivado das **mensagens persistidas** (`Conversation` / `Message`), **perfil declarado** e heurísticas de dificuldade; expor em API dedicada e UI de “desafio do dia”; rever LGPD (agregação, retenção, opt-in) em `05-ia-seguranca-e-conformidade.md`.
 - **RAG (opcional):** material didático proprietário indexado para respostas ancoradas em fontes — documentar em fase futura.
 - **i18n:** português primeiro; arquitetura preparada para strings externas.
 

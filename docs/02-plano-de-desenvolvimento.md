@@ -53,6 +53,8 @@ Este plano divide o trabalho em **fases sequenciais** com entregas verificáveis
 - Usuário consegue entrar, sair e recuperar sessão de forma segura.
 - Dados mínimos coletados; campos sensíveis documentados.
 
+**Evolução planeada (produto — após MVP mínimo de auth):** no **cadastro** (e/ou definições de conta), o aluno passará a fornecer de forma **estruturada**: **áreas/matérias em que sente dificuldade**, **o que gostaria de aprender** e **temas ou áreas de interesse para explorar coisas novas**. Estes campos alimentam personalização e, em conjunto com o histórico de **chats**, sustentam um **score ou nível de progresso por assunto** (quão avançado o utilizador parece estar naquele tópico ao longo do tempo), com transparência na UI, revisão de qualidade e enquadramento legal de **inferências** (ver `05-ia-seguranca-e-conformidade.md`).
+
 ---
 
 ## Fase 3 — Chat conversacional (núcleo)
@@ -69,6 +71,8 @@ Este plano divide o trabalho em **fases sequenciais** com entregas verificáveis
 
 - Latência aceitável e tratamento de erros (timeout, rate limit).
 - Logs sem dados desnecessários de menores (ver `05-ia-seguranca-e-conformidade.md`).
+
+**Antes do lançamento público:** nos passos finais de go-live, ativar o **speech premium** (TTS OpenAI no servidor, `OPENAI_TTS_ENABLED` em produção) conforme descrito em `04-estado-do-projeto.md` — secção **Go-live: speech premium (TTS OpenAI)**. Durante o ciclo de desenvolvimento pode manter-se Web Speech no browser para controlar custos.
 
 ---
 
@@ -112,6 +116,8 @@ Este plano divide o trabalho em **fases sequenciais** com entregas verificáveis
 
 **Entregas (priorizar uma de cada vez):**
 
+- **Jornada de perguntas diárias (“check-in” de entendimento):** o aluno recebe um conjunto de perguntas **por dia** para responder e avaliar o que assimilou; o estado **reinicia no início de cada dia** (novo lote, sem arrastar progresso pendente do dia anterior salvo decisão de produto). A geração usa **leitura agregada dos chats existentes** desse utilizador (com minimização de dados e opt-in/consentimento conforme evolução legal), **dados declarados no cadastro** (dificuldades, objectivos, interesses) e sinais de **onde o aluno demonstra mais dificuldade** na conversa (ex.: tópicos repetidos, erros corrigidos pelo assistente, pedidos de explicação mais longos — a definir tecnicamente). Requer jobs ou cron no BFF, armazenamento de “sessão do dia”, moderação das perguntas geradas e limites de custo LLM.
+- **Score de domínio por assunto:** modelo de dados e UI para um **indicador evolutivo** (por tema ou matéria) combinando **perfil declarado** e **análise periódica dos chats** (pipeline assíncrono ou batch); documentar limitações (“não é nota”), opt-out ou ajuste manual onde aplicável, e impacto em custo de LLM.
 - “Modo vestibular” com bancas e estilo de questão configurável.
 - Biblioteca de tópicos com links para o chat contextualizado.
 - Relatórios para responsáveis (tempo de estudo, temas perguntados — com privacidade).

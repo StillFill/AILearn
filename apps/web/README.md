@@ -42,6 +42,17 @@ npm run dev
 
 O chat (conversas e mensagens) fica na base; o rate limit de mensagens/registo é **em memória por processo** (ver comentários em `src/server/rate-limit.ts`).
 
+### Leitura em voz (respostas do assistente)
+
+Cada bolha do **assistente** tem um botão para **ouvir a resposta**. O texto enviado é o conteúdo convertido de Markdown para texto simples (`src/lib/markdown-to-plain-text.ts`).
+
+- **Por omissão:** [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/SpeechSynthesis) no browser (`speechSynthesis`) — sem custo OpenAI de TTS; vozes vêm do SO; heurística `pt-BR` + voz com nome mais “feminino” quando existir; `rate` ligeiramente acelerado.
+- **Opcional (OpenAI):** define `OPENAI_TTS_ENABLED=true` e `OPENAI_API_KEY` (ver `.env.example`). O cliente consulta `GET /api/v1/tts/status` e, se ativo, pede áudio com `POST /api/v1/tts` (MP3 gerado no servidor). Se o pedido falhar, tenta-se o **Web Speech** como fallback. Chave e faturação TTS ficam no servidor; há rate limit próprio (`RATE_LIMIT_TTS_PER_MIN`).
+
+**Planeamento de produto:** o speech premium (esta opção OpenAI) prevê-se **ligado nos passos finais antes do lançamento** em produção; ver [`docs/04-estado-do-projeto.md`](../docs/04-estado-do-projeto.md#go-live-speech-premium-tts-openai).
+
+Se nem Web Speech nem OpenAI TTS estiverem disponíveis, o botão não aparece.
+
 ### Erro: `Cannot read properties of undefined (reading 'findMany')` em `prisma.conversation`
 
 O cliente Prisma em `node_modules` está **desatualizado** em relação ao `schema.prisma` (por exemplo após `git pull`). Faz:
@@ -68,7 +79,7 @@ docker compose down  # para o Postgres local do Docker
 
 ## Variáveis de ambiente (referência)
 
-Ver `.env.example`. Resumo: `DATABASE_URL`, `AUTH_SECRET`; opcional `OPENAI_API_KEY` e `OPENAI_CHAT_MODEL`.
+Ver `.env.example`. Resumo: `DATABASE_URL`, `AUTH_SECRET`; opcional `OPENAI_API_KEY`, `OPENAI_CHAT_MODEL`, `OPENAI_TTS_ENABLED` e `OPENAI_TTS_VOICE` / `OPENAI_TTS_MODEL`.
 
 ---
 
@@ -92,11 +103,11 @@ A configuração que **depende da tua conta / painéis** (variáveis, build comm
 | Caminho | Função |
 |---------|--------|
 | `src/app/(app)/chat/` | UI de conversas |
-| `src/app/api/v1/` | Rotas BFF (conversas, billing/webhook placeholder) |
+| `src/app/api/v1/` | Rotas BFF (conversas, `tts` OpenAI opcional, billing/webhook placeholder) |
 | `src/domain/` | Tipos de domínio |
 | `src/server/` | `requireSessionUserId`, store em memória (chat), prompts, LLM |
 | `prisma/` | Esquema e migrações da tabela `User` |
 | `src/auth.ts` | Configuração NextAuth |
-| `src/components/chat/` | `ChatThread`, `MessageList`, `Composer`, `ModelNotice` |
+| `src/components/chat/` | `ChatThread`, `MessageList`, `Composer`, `ModelNotice`, leitura em voz (`MessageSpeechProvider`, `AssistantMessageRow`) |
 | `src/lib/api/v1-client.ts` | Cliente HTTP do browser para o BFF |
 | `docker-compose.yml` | Postgres opcional para desenvolvimento local |

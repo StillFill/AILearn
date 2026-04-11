@@ -21,7 +21,7 @@ Use este arquivo como **atalho** antes de implementar qualquer coisa neste repos
 ## 3. Estado atual do repositório (até alguém atualizar)
 
 - **Documentação:** `docs/` + `README.md` na raiz.
-- **Aplicação:** `apps/web/` — Next.js, BFF `/api/v1`, NextAuth + Prisma (`User`, `Conversation`, `Message` em Postgres), rate limit em memória. Próximo: SSE opcional, P4/P5 — ver `04-estado-do-projeto.md`.
+- **Aplicação:** `apps/web/` — Next.js, BFF `/api/v1`, NextAuth + Prisma (`User`, `Conversation`, `Message` em Postgres), rate limit em memória; no chat, **leitura em voz** (Web Speech por omissão; **OpenAI TTS** em `/api/v1/tts` se `OPENAI_TTS_ENABLED`). **Go-live:** speech premium (OpenAI TTS) documentado para ligar nos passos finais antes do lançamento — `04-estado-do-projeto.md` (secção *Go-live: speech premium*). **Roadmap:** **cadastro pedagógico** (dificuldades, objectivos, interesses), **score por assunto** (chats + declarado), **perguntas diárias** — `02-plano-de-desenvolvimento.md` (Fases 2 evolução e 6). Próximo: SSE opcional, P4/P5 — ver `04-estado-do-projeto.md`.
 
 ---
 

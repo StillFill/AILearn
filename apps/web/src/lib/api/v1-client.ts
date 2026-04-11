@@ -52,3 +52,23 @@ export async function sendUserMessage(
     ...init,
   });
 }
+
+/** Estado do TTS OpenAI no BFF (requer sessão). */
+export async function fetchTtsStatus(init?: RequestInit) {
+  return fetch(apiUrl("/tts/status"), {
+    ...defaultInit,
+    ...init,
+    headers: { ...init?.headers },
+  });
+}
+
+/** Áudio MP3; só funciona quando `openaiTtsEnabled` no status é true. */
+export async function postTtsSpeech(text: string, init?: RequestInit) {
+  return fetch(apiUrl("/tts"), {
+    ...defaultInit,
+    method: "POST",
+    headers: { ...JSON_HEADERS, ...init?.headers },
+    body: JSON.stringify({ text }),
+    ...init,
+  });
+}
