@@ -26,8 +26,8 @@ Documento de referência para implementação. **Decisões ainda não tomadas** 
 | Frontend | Next.js (React) + TypeScript | SSR/SSG, rotas API opcionais como BFF |
 | Estilo | Tailwind CSS + componentes acessíveis | Foco em contraste e leitura para longas conversas |
 | Backend persistência | PostgreSQL | Conversas, usuários, assinaturas |
-| ORM | Drizzle ou Prisma | DECISÃO PENDENTE (persistência atual: **memória no processo** em `apps/web`, substituir por PG) |
-| Auth | Auth.js / Clerk / Supabase Auth | DECISÃO PENDENTE — dev: header `x-smartlearn-user` ou usuário fixo `dev-user` no BFF |
+| ORM | **Prisma 5** | Em uso para `User`; conversas/mensagens ainda em memória até P3. |
+| Auth | **NextAuth (Auth.js) v5** + JWT + credenciais | Rotas `/login`, `/register`; BFF exige sessão. |
 | Hospedagem | Vercel + Neon/Railway/Fly | DECISÃO PENDENTE |
 | LLM | OpenAI / Azure OpenAI / outro | Comparar custo, SLA e política de dados |
 | Pagamentos | Stripe Billing | Padrão de mercado; adaptar se Brasil exigir métodos locais |
@@ -41,8 +41,8 @@ Trocar qualquer item acima é válido; o importante é manter **este documento**
 
 Entidades mínimas para o MVP:
 
-- **User:** id, email, created_at, flags (ex.: verificado).
-- **Profile:** user_id, display_name, birth_year ou age_band, locale, role (`student`, `guardian`, `admin`).
+- **User (implementado em Prisma):** id, email, passwordHash, name, role (`STUDENT` \| `GUARDIAN`), termsAcceptedAt, createdAt. *Perfil e consentimento estão no mesmo modelo por simplicidade do MVP.*
+- **Profile (doc original):** pode evoluir para tabela separada (`user_id`, `display_name`, …) se necessário.
 - **Subscription:** user_id ou family_id, plan_id, status, period_end, external_customer_id.
 - **Conversation:** id, owner_user_id, title (opcional), model, prompt_version, created_at.
 - **Message:** id, conversation_id, role (`user` | `assistant` | `system`), content, token_count (opcional), created_at.

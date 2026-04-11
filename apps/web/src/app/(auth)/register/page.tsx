@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { LoginForm } from "./login-form";
+import { RegisterForm } from "./register-form";
 
-export default async function LoginPage() {
+export default async function RegisterPage() {
   const session = await auth();
   if (session?.user) {
     redirect("/chat");
   }
-  return <LoginForm />;
+  return <RegisterForm />;
 }

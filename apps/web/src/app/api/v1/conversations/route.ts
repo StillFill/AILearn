@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/errors";
-import { getOwnerUserId } from "@/server/auth-context";
+import { requireSessionUserId } from "@/server/auth-context";
 import { createConversation, listConversations } from "@/server/conversation-store";
 
-export async function GET(request: NextRequest) {
-  const ownerUserId = getOwnerUserId(request);
+export async function GET() {
+  const ownerUserId = await requireSessionUserId();
+  if (!ownerUserId) {
+    return jsonError(401, "unauthorized", "Sessão necessária.");
+  }
   const items = listConversations(ownerUserId);
   return NextResponse.json({ conversations: items });
 }
 
 export async function POST(request: NextRequest) {
-  const ownerUserId = getOwnerUserId(request);
+  const ownerUserId = await requireSessionUserId();
+  if (!ownerUserId) {
+    return jsonError(401, "unauthorized", "Sessão necessária.");
+  }
   let body: unknown;
   try {
     body = await request.json();

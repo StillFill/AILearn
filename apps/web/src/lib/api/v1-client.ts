@@ -10,8 +10,11 @@ function apiUrl(path: string) {
   return `/api/v1/${path}`;
 }
 
+const defaultInit: RequestInit = { credentials: "include" };
+
 export async function fetchConversations(init?: RequestInit) {
   const res = await fetch(apiUrl("/conversations"), {
+    ...defaultInit,
     ...init,
     headers: { ...init?.headers },
   });
@@ -20,6 +23,7 @@ export async function fetchConversations(init?: RequestInit) {
 
 export async function createConversation(body?: { title?: string | null }, init?: RequestInit) {
   return fetch(apiUrl("/conversations"), {
+    ...defaultInit,
     method: "POST",
     headers: { ...JSON_HEADERS, ...init?.headers },
     body: JSON.stringify(body ?? {}),
@@ -29,6 +33,7 @@ export async function createConversation(body?: { title?: string | null }, init?
 
 export async function fetchMessages(conversationId: string, init?: RequestInit) {
   return fetch(apiUrl(`/conversations/${conversationId}/messages`), {
+    ...defaultInit,
     ...init,
     headers: { ...init?.headers },
   });
@@ -40,6 +45,7 @@ export async function sendUserMessage(
   init?: RequestInit,
 ) {
   return fetch(apiUrl(`/conversations/${conversationId}/messages`), {
+    ...defaultInit,
     method: "POST",
     headers: { ...JSON_HEADERS, ...init?.headers },
     body: JSON.stringify({ content }),

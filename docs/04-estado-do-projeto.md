@@ -41,11 +41,11 @@
 - [x] Deploy Vercel (URL em **Contatos / links úteis**; domínio estável do projeto pode ser adicionado depois)
 - [x] `.env.example` documentado (`apps/web/.env.example`)
 
-### P2 — Autenticação e dados de usuário
+### P2 — Autenticação e dados de utilizador
 
-- [ ] Registro/login
-- [ ] Perfis (aluno / responsável) mínimos
-- [ ] Fluxo de consentimento na UI
+- [x] Registro/login (NextAuth v5 + credenciais; `/login`, `/register`, `POST /api/auth/register`)
+- [x] Perfis mínimos (`STUDENT` | `GUARDIAN` na tabela `User` via Prisma)
+- [x] Fluxo de consentimento na UI (checkbox + página `/terms` rascunho; revisão jurídica ainda pendente em P0)
 
 ### P3 — Chat e aprendizado (core)
 
@@ -80,16 +80,16 @@
 | Área | Status |
 |------|--------|
 | Documentação estratégica e técnica | **Feito** (P0) |
-| Código frontend + BFF Next (`apps/web`) | **Iniciado** (P1 parcial, P3 parcial) |
+| Código frontend + BFF Next (`apps/web`) | **P1 fechado**, **P2 auth feito**, **P3 chat** ainda sem PG para mensagens |
 | Infraestrutura | **Vercel** — deploy ativo (ver URL abaixo) |
 
 ---
 
 ## Próximo passo recomendado (ordem)
 
-1. **P2:** Implementar auth e modelo de usuário mínimo (substituir `dev-user`).
-2. **P3:** PostgreSQL + rate limit + (opcional) SSE no `POST .../messages`.
-3. **P1 (opcional):** associar domínio estável (`*.vercel.app` de produção ou domínio próprio) e variáveis de ambiente na Vercel (`OPENAI_API_KEY`, etc.).
+1. **P3:** Persistir conversas/mensagens em PostgreSQL (além de `User`) + rate limit + (opcional) SSE no `POST .../messages`.
+2. **P1 (opcional):** domínio estável na Vercel; **Build Command** com `npx prisma migrate deploy && npm run build` e env `DATABASE_URL` + `AUTH_SECRET` (+ `OPENAI_API_KEY` se quiser LLM real).
+3. **P5 (paralelo):** moderação e endurecimento de segurança conforme `docs/05-ia-seguranca-e-conformidade.md`.
 
 ---
 
@@ -97,6 +97,7 @@
 
 | Data | Decisão |
 |------|---------|
+| 2026-04-10 | P2: NextAuth + Prisma + Postgres (`User`), registo/login, consentimento UI; BFF exige sessão. |
 | 2026-04-10 | Deploy na Vercel; URL atual documentada em **Contatos / links úteis** (subdomínio longo = deploy/projeto no painel). |
 | 2026-04-10 | App Next.js em `apps/web`: BFF `/api/v1`, chat UI básica, store em memória, LLM mock ou OpenAI opcional. |
 | 2026-04-10 | Criação do pacote de documentação inicial; MVP centrado em chat + IA; assinatura prevista após núcleo de chat. |
@@ -107,6 +108,7 @@
 
 ## Histórico de alterações (engenharia)
 
+- **2026-04-10:** P2 autenticação (NextAuth, Prisma `User`, páginas login/registo/termos); CI com Postgres para migrações.
 - **2026-04-10:** URL de deploy Vercel registrada; app público em ambiente hospedado (dados de chat ainda em memória no servidor).
 - **2026-04-10:** Scaffold `apps/web` (Next 16), rotas BFF, componentes de chat, CI; persistência ainda em memória.
 - **2026-04-10:** Estrutura `docs/` e README raiz criados; nenhum código de aplicação.

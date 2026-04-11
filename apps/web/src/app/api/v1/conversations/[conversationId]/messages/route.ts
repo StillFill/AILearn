@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jsonError } from "@/lib/api/errors";
-import { getOwnerUserId } from "@/server/auth-context";
+import { requireSessionUserId } from "@/server/auth-context";
 import {
   appendMessage,
   getConversation,
@@ -11,9 +11,12 @@ import { generateAssistantReply } from "@/server/llm/generate-reply";
 
 type Ctx = { params: Promise<{ conversationId: string }> };
 
-export async function GET(request: NextRequest, context: Ctx) {
+export async function GET(_request: NextRequest, context: Ctx) {
   const { conversationId } = await context.params;
-  const ownerUserId = getOwnerUserId(request);
+  const ownerUserId = await requireSessionUserId();
+  if (!ownerUserId) {
+    return jsonError(401, "unauthorized", "Sessão necessária.");
+  }
   const messages = getMessages(conversationId, ownerUserId);
   if (messages === null) {
     return jsonError(404, "not_found", "Conversa não encontrada");
@@ -23,7 +26,10 @@ export async function GET(request: NextRequest, context: Ctx) {
 
 export async function POST(request: NextRequest, context: Ctx) {
   const { conversationId } = await context.params;
-  const ownerUserId = getOwnerUserId(request);
+  const ownerUserId = await requireSessionUserId();
+  if (!ownerUserId) {
+    return jsonError(401, "unauthorized", "Sessão necessária.");
+  }
 
   if (!getConversation(conversationId, ownerUserId)) {
     return jsonError(404, "not_found", "Conversa não encontrada");
