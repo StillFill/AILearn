@@ -119,6 +119,7 @@
 
 ## Contatos / links úteis
 
+- Repositório Git: [https://github.com/StillFill/AILearn](https://github.com/StillFill/AILearn)
 - Design / Figma: *a preencher*
 - Painel Stripe: *a preencher*
 - Staging URL: *a preencher*
