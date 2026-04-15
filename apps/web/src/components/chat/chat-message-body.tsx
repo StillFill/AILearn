@@ -1,7 +1,9 @@
 "use client";
 
 import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 
 /** Estilos para Markdown (sem plugin typography; seguro: sem `rehype-raw`). */
 const markdownClass =
@@ -31,14 +33,27 @@ type Props = {
   variant: "user" | "assistant";
 };
 
+function normalizeMathDelimiters(content: string): string {
+  return content
+    .replace(/\\\[\s*([\s\S]*?)\s*\\\]/g, (_, math) => `$$${math.trim()}$$`)
+    .replace(/\\\(\s*([\s\S]*?)\s*\\\)/g, (_, math) => `$${math.trim()}$`);
+}
+
 export function ChatMessageBody({ content, variant }: Props) {
   if (variant === "user") {
     return <p className="whitespace-pre-wrap break-words">{content}</p>;
   }
 
+  const normalizedContent = normalizeMathDelimiters(content);
+
   return (
     <div className={markdownClass}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
+      >
+        {normalizedContent}
+      </ReactMarkdown>
     </div>
   );
 }

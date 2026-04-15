@@ -5,6 +5,12 @@
 export function markdownToPlainText(markdown: string): string {
   let s = markdown.replace(/\r\n/g, "\n");
 
+  // Normaliza delimitadores LaTeX comuns para preservar apenas o conteúdo.
+  s = s.replace(/\\\[\s*([\s\S]*?)\s*\\\]/g, "$1");
+  s = s.replace(/\\\(\s*([\s\S]*?)\s*\\\)/g, "$1");
+  s = s.replace(/\$\$\s*([\s\S]*?)\s*\$\$/g, "$1");
+  s = s.replace(/\$([^$\n]+)\$/g, "$1");
+
   s = s.replace(/```[\w-]*\n?[\s\S]*?```/g, " ");
   s = s.replace(/`([^`]+)`/g, "$1");
 
