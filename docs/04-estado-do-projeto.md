@@ -47,7 +47,7 @@
 - [x] Registro/login (NextAuth v5 + credenciais; `/login`, `/register`, `POST /api/auth/register`)
 - [x] Perfis mínimos (`STUDENT` | `GUARDIAN` na tabela `User` via Prisma)
 - [x] Fluxo de consentimento na UI (checkbox + página `/terms` rascunho; revisão jurídica ainda pendente em P0)
-- [ ] **Cadastro / conta:** campos pedagógicos obrigatórios (ou fortemente encorajados) — **dificuldades**, **o que quer aprender**, **interesses em aprender coisas novas**; ver `02-plano-de-desenvolvimento.md` (Fase 2, evolução planeada)
+- [x] **Cadastro / conta:** campos pedagógicos estruturados no registo — seleção guiada de matérias com mais **afinidade** (mín. 3) e mais **dificuldade** (mín. 3), com objetivo principal opcional para personalização inicial.
 
 ### P3 — Chat e aprendizado (core)
 
@@ -58,7 +58,7 @@
 - [x] Limite técnico de taxa (rate limit em memória: chat por utilizador; registo por IP — ver `.env.example`)
 - [x] Leitura em voz das respostas do assistente (Web Speech no browser por omissão; **OpenAI TTS** no BFF pronto mas desativado — `OPENAI_TTS_ENABLED`)
 - [ ] **Go-live:** ativar **speech premium** (OpenAI TTS em produção) nos passos finais antes do lançamento — ver [Go-live: speech premium](#go-live-speech-premium-tts-openai)
-- [ ] (Opcional) SSE no `POST .../messages`
+- [x] (Opcional) SSE no `POST .../messages` com resposta incremental no chat
 
 ### P4 — Monetização
 
@@ -127,6 +127,8 @@ Nos **passos finais antes do lançamento** (checklist de produção / cutover), 
 ## Histórico de alterações (engenharia)
 
 - **2026-04-10:** Roadmap: cadastro pedagógico, score por assunto (chats + declarado), perguntas diárias; P2/P6, visão e plano actualizados.
+- **2026-04-15:** P2 evolutivo fechado no cadastro: onboarding visual por matérias com seleção mínima (3 afinidade + 3 dificuldade) e persistência do perfil pedagógico no `User`.
+- **2026-04-15:** P3 UX: streaming SSE no envio de mensagem (`POST /api/v1/conversations/:id/messages`) com renderização incremental da resposta no chat.
 - **2026-04-10:** Documentado: speech premium (OpenAI TTS) a ligar nos passos finais antes do go-live; checklist P3 atualizado.
 - **2026-04-10:** BFF `GET/POST /api/v1/tts` + `OPENAI_TTS_*` (TTS OpenAI desligado por omissão; UI prefere API quando ativo, senão Web Speech).
 - **2026-04-10:** Chat — botão “ouvir resposta” nas mensagens do assistente (TTS no browser com Web Speech API; `pt-BR`).

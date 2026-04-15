@@ -3,6 +3,11 @@ import bcrypt from "bcryptjs";
 import { ProfileRole } from "@prisma/client";
 import { jsonError } from "@/lib/api/errors";
 import { prisma } from "@/lib/prisma";
+import {
+  normalizeSelectedSubjects,
+  parseLearningGoal,
+  validateSubjectSelections,
+} from "@/domain/learning-profile";
 import { checkRateLimit, getClientIp, rateLimitKey } from "@/server/rate-limit";
 
 function registerLimit(): { max: number; windowMs: number } {
@@ -42,6 +47,9 @@ export async function POST(request: NextRequest) {
   const name = typeof b.name === "string" ? b.name.trim() : "";
   const roleRaw = b.role;
   const acceptTerms = b.acceptTerms === true;
+  const affinitySubjects = normalizeSelectedSubjects(b.affinitySubjects);
+  const difficultySubjects = normalizeSelectedSubjects(b.difficultySubjects);
+  const learningGoal = parseLearningGoal(b.learningGoal);
 
   if (!acceptTerms) {
     return jsonError(400, "terms_required", "É necessário aceitar os termos para criar conta.");
@@ -67,6 +75,22 @@ export async function POST(request: NextRequest) {
     return jsonError(400, "validation_error", "Perfil inválido (use STUDENT ou GUARDIAN).");
   }
 
+  if (!validateSubjectSelections(affinitySubjects)) {
+    return jsonError(
+      400,
+      "validation_error",
+      "Selecione pelo menos 3 matérias diferentes em que você tem afinidade.",
+    );
+  }
+
+  if (!validateSubjectSelections(difficultySubjects)) {
+    return jsonError(
+      400,
+      "validation_error",
+      "Selecione pelo menos 3 matérias diferentes em que você tem dificuldade.",
+    );
+  }
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     return jsonError(409, "email_taken", "Este email já está registado.");
@@ -81,6 +105,9 @@ export async function POST(request: NextRequest) {
       passwordHash,
       name,
       role,
+      affinitySubjects,
+      difficultySubjects,
+      learningGoal,
       termsAcceptedAt,
     },
     select: {
@@ -88,6 +115,9 @@ export async function POST(request: NextRequest) {
       email: true,
       name: true,
       role: true,
+      affinitySubjects: true,
+      difficultySubjects: true,
+      learningGoal: true,
       termsAcceptedAt: true,
       createdAt: true,
     },

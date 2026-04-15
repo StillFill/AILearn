@@ -8,6 +8,7 @@ import { MessageList } from "./MessageList";
 import { ModelNotice } from "./ModelNotice";
 
 type Props = { conversationId: string };
+type StreamEventName = "start" | "delta" | "done" | "error";
 
 export function ChatThread({ conversationId }: Props) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -49,11 +50,101 @@ export function ChatThread({ conversationId }: Props) {
       setSendError(j?.error?.message ?? `Erro ${res.status}`);
       return;
     }
-    const data = (await res.json()) as {
-      assistantMessage: Message;
-      userMessage: Message;
+    if (!res.body) {
+      setSendError("Resposta sem stream.");
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    const pendingAssistantId = `assistant-pending-${Date.now()}`;
+    let hasStarted = false;
+
+    const upsertPendingAssistant = (delta: string) => {
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === pendingAssistantId);
+        if (idx === -1) {
+          return [
+            ...prev,
+            {
+              id: pendingAssistantId,
+              conversationId,
+              role: "assistant",
+              content: delta,
+              createdAt: new Date().toISOString(),
+            },
+          ];
+        }
+        const next = [...prev];
+        next[idx] = { ...next[idx], content: next[idx].content + delta };
+        return next;
+      });
     };
-    setMessages((prev) => [...prev, data.userMessage, data.assistantMessage]);
+
+    const replacePendingAssistant = (assistantMessage: Message) => {
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === pendingAssistantId);
+        if (idx === -1) return [...prev, assistantMessage];
+        const next = [...prev];
+        next[idx] = assistantMessage;
+        return next;
+      });
+    };
+
+    const removePendingAssistant = () => {
+      setMessages((prev) => prev.filter((m) => m.id !== pendingAssistantId));
+    };
+
+    const handleSseEvent = (eventName: StreamEventName, dataRaw: string) => {
+      const payload = JSON.parse(dataRaw) as Record<string, unknown>;
+      if (eventName === "start") {
+        const userMessage = payload.userMessage as Message | undefined;
+        if (userMessage && !hasStarted) {
+          hasStarted = true;
+          setMessages((prev) => [...prev, userMessage]);
+        }
+        return;
+      }
+      if (eventName === "delta") {
+        const delta = typeof payload.delta === "string" ? payload.delta : "";
+        if (delta) upsertPendingAssistant(delta);
+        return;
+      }
+      if (eventName === "done") {
+        const assistantMessage = payload.assistantMessage as Message | undefined;
+        if (assistantMessage) replacePendingAssistant(assistantMessage);
+        return;
+      }
+      if (eventName === "error") {
+        removePendingAssistant();
+        setSendError(
+          typeof payload.message === "string" ? payload.message : "Erro ao gerar resposta em tempo real.",
+        );
+      }
+    };
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() ?? "";
+
+      for (const chunk of chunks) {
+        const lines = chunk.split("\n");
+        const eventLine = lines.find((line) => line.startsWith("event:"));
+        const dataLine = lines.find((line) => line.startsWith("data:"));
+        if (!eventLine || !dataLine) continue;
+        const eventName = eventLine.slice(6).trim() as StreamEventName;
+        const dataRaw = dataLine.slice(5).trim();
+        try {
+          handleSseEvent(eventName, dataRaw);
+        } catch {
+          setSendError("Erro ao processar resposta em tempo real.");
+        }
+      }
+    }
   }
 
   return (

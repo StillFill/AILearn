@@ -24,6 +24,9 @@ model User {
   passwordHash    String
   name            String
   role            ProfileRole
+  affinitySubjects   String[]     @default([])
+  difficultySubjects String[]     @default([])
+  learningGoal       String?
   termsAcceptedAt DateTime
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt

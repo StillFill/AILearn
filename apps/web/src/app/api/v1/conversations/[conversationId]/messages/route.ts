@@ -7,10 +7,11 @@ import {
   getMessages,
   setConversationModel,
 } from "@/server/conversation-store";
-import { generateAssistantReply } from "@/server/llm/generate-reply";
+import { streamAssistantReply } from "@/server/llm/generate-reply";
 import { checkRateLimit, rateLimitKey } from "@/server/rate-limit";
 
 type Ctx = { params: Promise<{ conversationId: string }> };
+const encoder = new TextEncoder();
 
 function chatMessageLimit(): { max: number; windowMs: number } {
   const max = Number(process.env.RATE_LIMIT_CHAT_MESSAGES_PER_MIN ?? 40);
@@ -73,32 +74,63 @@ export async function POST(request: NextRequest, context: Ctx) {
     return jsonError(500, "persist_failed", "Não foi possível salvar a mensagem");
   }
 
-  try {
-    const priorForLlm = prior.filter((m) => m.role !== "system");
-    const reply = await generateAssistantReply({
-      priorMessages: priorForLlm,
-      userContent: content,
-    });
+  const priorForLlm = prior.filter((m) => m.role !== "system");
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const writeEvent = (event: string, payload: unknown) => {
+        controller.enqueue(encoder.encode(`event: ${event}\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      };
 
-    await setConversationModel(conversationId, ownerUserId, reply.model);
+      writeEvent("start", { userMessage: userMsg });
 
-    const assistantMsg = await appendMessage(
-      conversationId,
-      ownerUserId,
-      "assistant",
-      reply.content,
-    );
-    if (!assistantMsg) {
-      return jsonError(500, "persist_failed", "Não foi possível salvar a resposta");
-    }
+      try {
+        const generator = streamAssistantReply({
+          priorMessages: priorForLlm,
+          userContent: content,
+        });
 
-    return NextResponse.json({
-      userMessage: userMsg,
-      assistantMessage: assistantMsg,
-      model: reply.model,
-    });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : "Erro ao gerar resposta";
-    return jsonError(502, "llm_error", message);
-  }
+        let combined = "";
+        let model = "mock-llm";
+
+        while (true) {
+          const next = await generator.next();
+          if (next.done) {
+            model = next.value.model;
+            combined = next.value.content;
+            break;
+          }
+          model = next.value.model;
+          combined += next.value.delta;
+          writeEvent("delta", { delta: next.value.delta, model });
+        }
+
+        await setConversationModel(conversationId, ownerUserId, model);
+        const assistantMsg = await appendMessage(conversationId, ownerUserId, "assistant", combined);
+        if (!assistantMsg) {
+          writeEvent("error", {
+            code: "persist_failed",
+            message: "Não foi possível salvar a resposta",
+          });
+          controller.close();
+          return;
+        }
+
+        writeEvent("done", { assistantMessage: assistantMsg, model });
+        controller.close();
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Erro ao gerar resposta";
+        writeEvent("error", { code: "llm_error", message });
+        controller.close();
+      }
+    },
+  });
+
+  return new NextResponse(stream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
+  });
 }
