@@ -9,13 +9,13 @@ import {
 } from "@/server/conversation-store";
 import { streamAssistantReply } from "@/server/llm/generate-reply";
 import { checkRateLimit, rateLimitKey } from "@/server/rate-limit";
-import { extractSignalsFromMessage } from "@/server/study/signal-extractor";
+import { extractSignalsFromMessageEnhanced } from "@/server/study/signal-extractor";
 import {
   addLearningSignals,
   getStudySessionById,
   refreshSessionProgress,
 } from "@/server/study/study-service";
-import { isMessageWithinSessionTheme } from "@/server/study/session-topic-guard";
+import { classifySessionTopicMatch } from "@/server/study/session-topic-guard";
 
 type Ctx = { params: Promise<{ conversationId: string }> };
 const encoder = new TextEncoder();
@@ -88,10 +88,13 @@ export async function POST(request: NextRequest, context: Ctx) {
       ? await getStudySessionById(ownerUserId, conversation.learningSessionId)
       : null;
 
-  if (
-    activeSession &&
-    !isMessageWithinSessionTheme({ session: activeSession, userContent: content })
-  ) {
+  if (activeSession) {
+    const decision = await classifySessionTopicMatch({
+      session: activeSession,
+      userContent: content,
+    });
+    const shouldBlock = decision.onTopic === false && decision.confidence >= 0.75;
+    if (shouldBlock) {
     const assistantMsg = await appendMessage(
       conversationId,
       ownerUserId,
@@ -99,6 +102,7 @@ export async function POST(request: NextRequest, context: Ctx) {
       [
         `Estamos na sessão de ${activeSession.subject} sobre "${activeSession.topic}".`,
         "Para estudar um tema diferente, crie uma nova sessão de estudo com a matéria e tópico corretos.",
+        `(Classificação: fora do tema com ${Math.round(decision.confidence * 100)}% de confiança.)`,
       ].join(" "),
     );
     if (!assistantMsg) {
@@ -126,6 +130,7 @@ export async function POST(request: NextRequest, context: Ctx) {
         Connection: "keep-alive",
       },
     });
+    }
   }
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -177,7 +182,7 @@ export async function POST(request: NextRequest, context: Ctx) {
         }
 
         if (activeSession) {
-          const signals = extractSignalsFromMessage({
+          const signals = await extractSignalsFromMessageEnhanced({
             session: activeSession,
             userContent: content,
             assistantContent: combined,

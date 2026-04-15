@@ -235,15 +235,24 @@ export function buildAdaptivePlan(signals: LearningSignal[]): AdaptivePlan {
   }
 
   const grouped = new Map<string, number>();
+  const hints = new Map<string, string>();
   for (const signal of signals) {
-    const key = `${signal.subject}: ${signal.painPoint}`;
+    const topicLabel = signal.topic ? ` (${signal.topic})` : "";
+    const key = `${signal.subject}: ${signal.painPoint}${topicLabel}`;
     grouped.set(key, (grouped.get(key) ?? 0) + 1);
+    if (!hints.has(key) && signal.planHint) {
+      hints.set(key, signal.planHint);
+    }
   }
   const focus = [...grouped.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([key]) => key);
 
-  const nextSteps = focus.map((item) => `Praticar 2 exercícios focados em "${item}".`);
+  const nextSteps = focus.map((item) => {
+    const hint = hints.get(item);
+    if (hint) return `${item}: ${hint}`;
+    return `${item}: praticar exercícios guiados e revisar conceito base com exemplos.`;
+  });
   return { focus, nextSteps };
 }

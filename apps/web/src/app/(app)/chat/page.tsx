@@ -252,7 +252,21 @@ export default function ChatIndexPage() {
               </p>
               <ul className="mt-1 flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
                 {recentSignals.slice(0, 3).map((signal) => (
-                  <li key={signal.id}>- {signal.subject}: {signal.painPoint}</li>
+                  <li key={signal.id} className="rounded border border-zinc-200 p-2 dark:border-zinc-800">
+                    <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                      {signal.subject}
+                      {signal.topic ? ` • ${signal.topic}` : ""}
+                    </p>
+                    <p className="mt-0.5">{signal.painPoint}</p>
+                    {signal.evidence ? (
+                      <p className="mt-0.5 text-zinc-500 dark:text-zinc-400">
+                        Evidência: &quot;{signal.evidence.slice(0, 120)}&quot;
+                      </p>
+                    ) : null}
+                    <p className="mt-0.5 text-zinc-500 dark:text-zinc-400">
+                      Confiança: {Math.round(signal.confidence * 100)}%
+                    </p>
+                  </li>
                 ))}
               </ul>
             </div>
