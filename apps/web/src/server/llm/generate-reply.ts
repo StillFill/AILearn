@@ -5,6 +5,12 @@ export interface GenerateReplyInput {
   /** Histórico já persistido (sem a nova mensagem do usuário). */
   priorMessages: Message[];
   userContent: string;
+  studySessionContext?: {
+    subject: string;
+    topic: string;
+    declaredDifficulty: string;
+    goal: string;
+  } | null;
 }
 
 export interface GenerateReplyOutput {
@@ -47,12 +53,16 @@ function mockReply(input: GenerateReplyInput): GenerateReplyOutput {
   const system = getSystemPrompt();
   void system;
   const q = input.userContent.trim() || "(mensagem vazia)";
+  const studyContext = input.studySessionContext
+    ? `\nSessão ativa: ${input.studySessionContext.subject} / ${input.studySessionContext.topic}. Objetivo: ${input.studySessionContext.goal}.`
+    : "";
   return {
     model: "mock-llm",
     content: [
       "[Modo demonstração — sem OPENAI_API_KEY no servidor]",
       "",
       `Sua pergunta: «${q}»`,
+      studyContext,
       "",
       "Com a integração real, aqui viria a resposta do modelo seguindo o prompt pedagógico (passo a passo, tom de professor). O BFF monta system + histórico + sua mensagem e persiste tudo após a conclusão.",
     ].join("\n"),
@@ -78,8 +88,12 @@ async function openAiChatCompletion(input: GenerateReplyInput): Promise<Generate
   const model = process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o-mini";
   const system = getSystemPrompt();
 
+  const sessionHint = input.studySessionContext
+    ? `\nModo professor (sessão guiada ativa): Matéria=${input.studySessionContext.subject}; Tópico=${input.studySessionContext.topic}; Dificuldade declarada=${input.studySessionContext.declaredDifficulty}; Objetivo=${input.studySessionContext.goal}. Conduza em etapas: diagnosticar -> ensinar -> praticar -> verificar -> próximo passo.`
+    : "";
+
   const apiMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
-    { role: "system", content: system },
+    { role: "system", content: `${system}${sessionHint}` },
     ...input.priorMessages
       .filter((m) => m.role !== "system")
       .map((m) => ({
@@ -123,8 +137,12 @@ async function* streamOpenAiChatCompletion(
 ): AsyncGenerator<GenerateReplyChunk, GenerateReplyOutput> {
   const model = process.env.OPENAI_CHAT_MODEL?.trim() || "gpt-4o-mini";
   const system = getSystemPrompt();
+  const sessionHint = input.studySessionContext
+    ? `\nModo professor (sessão guiada ativa): Matéria=${input.studySessionContext.subject}; Tópico=${input.studySessionContext.topic}; Dificuldade declarada=${input.studySessionContext.declaredDifficulty}; Objetivo=${input.studySessionContext.goal}. Conduza em etapas: diagnosticar -> ensinar -> praticar -> verificar -> próximo passo.`
+    : "";
+
   const apiMessages: { role: "system" | "user" | "assistant"; content: string }[] = [
-    { role: "system", content: system },
+    { role: "system", content: `${system}${sessionHint}` },
     ...input.priorMessages
       .filter((m) => m.role !== "system")
       .map((m) => ({

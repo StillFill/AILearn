@@ -34,7 +34,10 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={(ev) => void onSubmit(ev)} className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <form
+      onSubmit={(ev) => void onSubmit(ev)}
+      className="mx-auto flex w-full max-w-xl flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+    >
       <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Entrar</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Conta para usar o chat. Ainda não tem?{" "}

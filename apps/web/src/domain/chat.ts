@@ -14,6 +14,7 @@ export interface Message {
 export interface Conversation {
   id: string;
   ownerUserId: string;
+  learningSessionId?: string | null;
   title: string | null;
   model: string;
   promptVersion: string;

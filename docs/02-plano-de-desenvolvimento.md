@@ -124,6 +124,33 @@ Este plano divide o trabalho em **fases sequenciais** com entregas verificáveis
 
 ---
 
+## Fase 7 — Tutor guiado por sessão e plano adaptativo
+
+**Objetivo:** reduzir o “chat aberto” e operar como **professor orientador**, com foco em matéria, diagnóstico e evolução contínua do aluno.
+
+**Entregas:**
+
+- **Sessão guiada de estudo (antes do chat):** seleção de matéria/tópico + dificuldade declarada + meta curta da sessão.
+- **Modo professor no chat (durante):** fluxo pedagógico em estados (`diagnosticar` -> `ensinar` -> `praticar` -> `avaliar` -> `próximo passo`) em vez de respostas soltas.
+- **Extração estruturada de dores (após interação):** classificar sinais como matéria, subtema, dor principal, evidências textuais e confiança.
+- **Plano adaptativo por aluno (contínuo):** atualizar um plano semanal com prioridades, microtarefas e recomendações para próxima sessão.
+- **Transparência na UI:** mostrar “o que a IA entendeu” (dificuldades detectadas) e o plano atual sem apresentar como nota escolar oficial.
+
+**Critérios de pronto:**
+
+- Toda sessão nova começa com contexto pedagógico mínimo (matéria, tópico e objetivo).
+- O chat retorna respostas pedagógicas no formato orientado (não apenas Q&A aberto).
+- A aplicação consegue persistir pelo menos 1 sinal de dor por sessão com confiança.
+- O aluno vê um plano resumido gerado a partir dos sinais recentes e consegue iniciar nova sessão com esse contexto.
+
+**Notas de implementação (incremental):**
+
+1. Entregar sessão guiada + prompt orientado.
+2. Adicionar extração de sinais em JSON e persistência.
+3. Ligar sinais ao plano adaptativo e à UX de acompanhamento.
+
+---
+
 ## Riscos e mitigações
 
 | Risco | Mitigação |
@@ -142,6 +169,7 @@ F0 Docs → F1 Setup → F2 Auth → F3 Chat → F4 Billing
                               ↘
                                F5 Safety (paralelo a partir de F3)
                                         → F6 Extensões
+                                        → F7 Tutor guiado
 ```
 
 Atualize esta seção se a ordem mudar; registre a mudança e a data em `04-estado-do-projeto.md`.

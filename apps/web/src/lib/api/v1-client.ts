@@ -21,7 +21,10 @@ export async function fetchConversations(init?: RequestInit) {
   return res;
 }
 
-export async function createConversation(body?: { title?: string | null }, init?: RequestInit) {
+export async function createConversation(
+  body?: { title?: string | null; learningSessionId?: string | null },
+  init?: RequestInit,
+) {
   return fetch(apiUrl("/conversations"), {
     ...defaultInit,
     method: "POST",
@@ -69,6 +72,32 @@ export async function postTtsSpeech(text: string, init?: RequestInit) {
     method: "POST",
     headers: { ...JSON_HEADERS, ...init?.headers },
     body: JSON.stringify({ text }),
+    ...init,
+  });
+}
+
+export async function fetchStudySessionState(init?: RequestInit) {
+  return fetch(apiUrl("/study-sessions"), {
+    ...defaultInit,
+    ...init,
+    headers: { ...init?.headers },
+  });
+}
+
+export async function startStudySession(
+  body: {
+    subject: string;
+    topic: string;
+    declaredDifficulty: string;
+    goal: string;
+  },
+  init?: RequestInit,
+) {
+  return fetch(apiUrl("/study-sessions"), {
+    ...defaultInit,
+    method: "POST",
+    headers: { ...JSON_HEADERS, ...init?.headers },
+    body: JSON.stringify(body),
     ...init,
   });
 }

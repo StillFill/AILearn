@@ -24,19 +24,66 @@ model User {
   passwordHash    String
   name            String
   role            ProfileRole
-  affinitySubjects   String[]     @default([])
-  difficultySubjects String[]     @default([])
-  learningGoal       String?
+  affinitySubjects            String[]     @default([])
+  difficultySubjects          String[]     @default([])
+  learningGoal                String?
+  stripeCustomerId            String?      @unique
+  stripeSubscriptionId        String?      @unique
+  stripePriceId               String?
+  subscriptionStatus          String?
+  subscriptionCurrentPeriodEnd DateTime?
   termsAcceptedAt DateTime
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   conversations   Conversation[]
+  learningSessions LearningSession[]
+  learningSignals  LearningSignal[]
+}
+
+model LearningSession {
+  id                 String   @id @default(cuid())
+  ownerUserId        String
+  owner              User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  subject            String
+  topic              String
+  declaredDifficulty String
+  goal               String
+  understandingScore Int      @default(0)
+  understandingSummary String?
+  status             String   @default("ACTIVE")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  endedAt            DateTime?
+  signals            LearningSignal[]
+  conversations      Conversation[]
+
+  @@index([ownerUserId, status])
+}
+
+model LearningSignal {
+  id          String   @id @default(cuid())
+  ownerUserId String
+  owner       User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sessionId   String?
+  session     LearningSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  subject     String
+  topic       String?
+  painPoint   String
+  confidence  Float
+  evidence    String?
+  planHint    String?
+  createdAt   DateTime @default(now())
+
+  @@index([ownerUserId, createdAt])
+  @@index([sessionId])
 }
 
 model Conversation {
   id             String    @id @default(cuid())
   ownerUserId    String
   owner          User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  learningSessionId String?
+  learningSession   LearningSession? @relation(fields: [learningSessionId], references: [id], onDelete: SetNull)
   title          String?
   model          String    @default("mock-llm")
   promptVersion  String
@@ -45,6 +92,7 @@ model Conversation {
   messages       Message[]
 
   @@index([ownerUserId])
+  @@index([learningSessionId])
 }
 
 model Message {

@@ -30,7 +30,14 @@ export async function POST(request: NextRequest) {
     typeof (body as { title: unknown }).title === "string"
       ? (body as { title: string }).title
       : null;
+  const learningSessionId =
+    typeof body === "object" &&
+    body !== null &&
+    "learningSessionId" in body &&
+    typeof (body as { learningSessionId: unknown }).learningSessionId === "string"
+      ? (body as { learningSessionId: string }).learningSessionId.trim()
+      : null;
 
-  const conversation = await createConversation(ownerUserId, title);
+  const conversation = await createConversation(ownerUserId, title, learningSessionId);
   return NextResponse.json({ conversation }, { status: 201 });
 }

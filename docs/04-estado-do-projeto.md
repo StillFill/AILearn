@@ -18,6 +18,7 @@
 | P4 | Assinaturas | Stripe, planos, limites |
 | P5 | Segurança | Moderação, testes, runbooks |
 | P6 | Extensões | Vestibular, trilhas, relatórios, **scores por assunto**, **perguntas diárias** (chat + cadastro) |
+| P7 | Tutor guiado | Sessão de estudo orientada, modo professor, extração de dores e plano adaptativo |
 
 ---
 
@@ -62,8 +63,8 @@
 
 ### P4 — Monetização
 
-- [ ] Produtos/preços no Stripe (ou equivalente)
-- [ ] Checkout e portal do cliente
+- [x] Produtos/preços no Stripe (ou equivalente)
+- [x] Checkout e portal do cliente
 - [ ] Enforcement de limites por plano
 
 ### P5 — Segurança operacional
@@ -80,6 +81,14 @@
 - [ ] Trilhas / tópicos curados
 - [ ] Relatórios para responsáveis
 
+### P7 — Tutor guiado por sessão e plano adaptativo
+
+- [x] Fluxo “iniciar sessão de estudo” (matéria, tópico, dificuldade declarada, objetivo da sessão)
+- [x] Chat em modo professor com estados pedagógicos (`diagnosticar` -> `ensinar` -> `praticar` -> `avaliar` -> `próximo passo`)
+- [x] Extração estruturada de dores por sessão (matéria/subtema/dor/confiança/evidências)
+- [x] Persistência dos sinais e montagem de plano adaptativo por aluno
+- [x] UI de transparência: mostrar “o que a IA entendeu” e próximos passos recomendados
+
 ---
 
 ## O que já foi produzido (resumo executivo)
@@ -88,13 +97,14 @@
 |------|--------|
 | Documentação estratégica e técnica | **Feito** (P0) |
 | Código frontend + BFF Next (`apps/web`) | **P1 fechado**, **P2**, **P3** núcleo chat em PG + rate limit |
+| Monetização (Stripe) | **P4 parcial**: checkout, portal e webhook de assinatura implementados; falta enforcement de limites |
 | Infraestrutura | **Vercel** — deploy ativo (ver URL abaixo) |
 
 ---
 
 ## Próximo passo recomendado (ordem)
 
-1. **P3 (opcional):** SSE/stream no `POST .../messages` para tokens em tempo real.
+1. **P4 (continuação):** aplicar enforcement de limites por plano no chat (bloqueio/degradação para sem assinatura ou fora do plano).
 2. **P1 (manual / pendente):** completar [configuração externa](#configuração-externa-pendente-fazer-depois) na Vercel (e ajustar CI se necessário).
 3. **P5 (paralelo):** moderação e endurecimento de segurança conforme `docs/05-ia-seguranca-e-conformidade.md`.
 
@@ -110,6 +120,9 @@ Nos **passos finais antes do lançamento** (checklist de produção / cutover), 
 
 | Data | Decisão |
 |------|---------|
+| 2026-04-15 | **P7 MVP implementado no código:** API de sessão guiada (`/api/v1/study-sessions`), contexto pedagógico injetado no chat, extração de sinais de dor e plano adaptativo exibido na UI de `/chat`. |
+| 2026-04-15 | **P4 parcial implementado:** Stripe checkout (`/api/v1/billing/checkout`), portal (`/api/v1/billing/portal`) e webhook (`/api/v1/webhooks/stripe`) já sincronizam status no `User`; próximo passo é enforcement de limites por plano no chat. |
+| 2026-04-15 | **Novo plano P7:** tutor guiado por sessão (matéria/tópico/meta), chat com fluxo pedagógico, extração estruturada de dores e plano adaptativo por aluno — ver Fase 7 em `02-plano-de-desenvolvimento.md`. |
 | 2026-04-10 | **Roadmap:** cadastro com **dificuldades / objectivos / interesses**; **score por assunto** (chats + perfil declarado); **perguntas diárias** (reset diário) articuladas com chats + declarações — ver Fases 2 (evolução) e 6 em `02-plano-de-desenvolvimento.md`. |
 | 2026-04-10 | **Go-live:** speech premium (OpenAI TTS) fica **desligado** durante a maior parte do desenvolvimento; nos passos finais antes do lançamento público, **ativar** `OPENAI_TTS_ENABLED` (e chave) em produção para a experiência de voz final. |
 | 2026-04-10 | P3: TTS **OpenAI** (`POST /api/v1/tts`) implementado atrás de `OPENAI_TTS_ENABLED` (default off); com flag off o cliente usa **Web Speech**; com flag on + `OPENAI_API_KEY`, áudio MP3 no servidor (fallback nativo se o pedido falhar). |
@@ -127,6 +140,9 @@ Nos **passos finais antes do lançamento** (checklist de produção / cutover), 
 ## Histórico de alterações (engenharia)
 
 - **2026-04-10:** Roadmap: cadastro pedagógico, score por assunto (chats + declarado), perguntas diárias; P2/P6, visão e plano actualizados.
+- **2026-04-15:** P7 MVP entregue: sessões guiadas, sinais de dor persistidos e plano adaptativo básico integrado ao chat.
+- **2026-04-15:** P4 monetização parcial: checkout/portal Stripe e webhook ativos com sincronização de assinatura na tabela `User`.
+- **2026-04-15:** Adicionada fase P7 (tutor guiado por sessão e plano adaptativo): diagnóstico orientado, extração de dores estruturadas e plano pedagógico contínuo.
 - **2026-04-15:** P2 evolutivo fechado no cadastro: onboarding visual por matérias com seleção mínima (3 afinidade + 3 dificuldade) e persistência do perfil pedagógico no `User`.
 - **2026-04-15:** P3 UX: streaming SSE no envio de mensagem (`POST /api/v1/conversations/:id/messages`) com renderização incremental da resposta no chat.
 - **2026-04-10:** Documentado: speech premium (OpenAI TTS) a ligar nos passos finais antes do go-live; checklist P3 atualizado.

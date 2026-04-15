@@ -9,6 +9,13 @@ import {
 } from "@/server/conversation-store";
 import { streamAssistantReply } from "@/server/llm/generate-reply";
 import { checkRateLimit, rateLimitKey } from "@/server/rate-limit";
+import { extractSignalsFromMessage } from "@/server/study/signal-extractor";
+import {
+  addLearningSignals,
+  getStudySessionById,
+  refreshSessionProgress,
+} from "@/server/study/study-service";
+import { isMessageWithinSessionTheme } from "@/server/study/session-topic-guard";
 
 type Ctx = { params: Promise<{ conversationId: string }> };
 const encoder = new TextEncoder();
@@ -45,7 +52,8 @@ export async function POST(request: NextRequest, context: Ctx) {
     return jsonError(429, "rate_limited", "Muitas mensagens por minuto. Aguarda um momento.");
   }
 
-  if (!(await getConversation(conversationId, ownerUserId))) {
+  const conversation = await getConversation(conversationId, ownerUserId);
+  if (!conversation) {
     return jsonError(404, "not_found", "Conversa não encontrada");
   }
 
@@ -75,6 +83,50 @@ export async function POST(request: NextRequest, context: Ctx) {
   }
 
   const priorForLlm = prior.filter((m) => m.role !== "system");
+  const activeSession =
+    conversation.learningSessionId != null
+      ? await getStudySessionById(ownerUserId, conversation.learningSessionId)
+      : null;
+
+  if (
+    activeSession &&
+    !isMessageWithinSessionTheme({ session: activeSession, userContent: content })
+  ) {
+    const assistantMsg = await appendMessage(
+      conversationId,
+      ownerUserId,
+      "assistant",
+      [
+        `Estamos na sessão de ${activeSession.subject} sobre "${activeSession.topic}".`,
+        "Para estudar um tema diferente, crie uma nova sessão de estudo com a matéria e tópico corretos.",
+      ].join(" "),
+    );
+    if (!assistantMsg) {
+      return jsonError(500, "persist_failed", "Não foi possível salvar a resposta de orientação.");
+    }
+
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode("event: start\n"));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ userMessage: userMsg })}\n\n`));
+        controller.enqueue(encoder.encode("event: done\n"));
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ assistantMessage: assistantMsg, model: "session-guard" })}\n\n`,
+          ),
+        );
+        controller.close();
+      },
+    });
+
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+      },
+    });
+  }
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const writeEvent = (event: string, payload: unknown) => {
@@ -88,6 +140,14 @@ export async function POST(request: NextRequest, context: Ctx) {
         const generator = streamAssistantReply({
           priorMessages: priorForLlm,
           userContent: content,
+          studySessionContext: activeSession
+            ? {
+                subject: activeSession.subject,
+                topic: activeSession.topic,
+                declaredDifficulty: activeSession.declaredDifficulty,
+                goal: activeSession.goal,
+              }
+            : null,
         });
 
         let combined = "";
@@ -114,6 +174,16 @@ export async function POST(request: NextRequest, context: Ctx) {
           });
           controller.close();
           return;
+        }
+
+        if (activeSession) {
+          const signals = extractSignalsFromMessage({
+            session: activeSession,
+            userContent: content,
+            assistantContent: combined,
+          });
+          await addLearningSignals(ownerUserId, signals);
+          await refreshSessionProgress(activeSession.id, ownerUserId);
         }
 
         writeEvent("done", { assistantMessage: assistantMsg, model });

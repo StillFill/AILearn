@@ -96,7 +96,7 @@ export function RegisterForm() {
   return (
     <form
       onSubmit={(ev) => void onSubmit(ev)}
-      className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      className="mx-auto flex w-full max-w-3xl flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
     >
       <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Criar conta</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -182,7 +182,7 @@ export function RegisterForm() {
         <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
           Matérias com mais afinidade ({affinitySubjects.length}/{MIN_SUBJECTS_PER_GROUP}+)
         </p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {SUBJECT_OPTIONS.map((subject) => {
             const selected = affinitySubjects.includes(subject);
             return (
@@ -207,7 +207,7 @@ export function RegisterForm() {
         <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
           Matérias com mais dificuldade ({difficultySubjects.length}/{MIN_SUBJECTS_PER_GROUP}+)
         </p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {SUBJECT_OPTIONS.map((subject) => {
             const selected = difficultySubjects.includes(subject);
             return (

@@ -57,6 +57,7 @@ function toDomainMessage(m: {
 function toDomainConversation(c: {
   id: string;
   ownerUserId: string;
+  learningSessionId: string | null;
   title: string | null;
   model: string;
   promptVersion: string;
@@ -65,6 +66,7 @@ function toDomainConversation(c: {
   return {
     id: c.id,
     ownerUserId: c.ownerUserId,
+    learningSessionId: c.learningSessionId,
     title: c.title,
     model: c.model,
     promptVersion: c.promptVersion,
@@ -107,10 +109,22 @@ export async function getConversation(
 export async function createConversation(
   ownerUserId: string,
   title: string | null,
+  learningSessionId?: string | null,
 ): Promise<Conversation> {
+  if (learningSessionId) {
+    const validSession = await prisma.learningSession.findFirst({
+      where: { id: learningSessionId, ownerUserId },
+      select: { id: true },
+    });
+    if (!validSession) {
+      throw new Error("Sessão de estudo inválida para este utilizador.");
+    }
+  }
+
   const c = await prisma.conversation.create({
     data: {
       ownerUserId,
+      learningSessionId: learningSessionId ?? null,
       title: title?.trim() || null,
       model: DEFAULT_MODEL,
       promptVersion: PROMPT_VERSION,

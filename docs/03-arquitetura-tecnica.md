@@ -50,6 +50,9 @@ Entidades mínimas para o MVP:
 Campos adicionais (auditoria, moderação):
 
 - **ModerationEvent:** message_id, action, reason_code, created_at (sem armazenar conteúdo redundante se não necessário).
+- **LearningSession (planeado, P7):** sessão orientada por matéria/tópico/objetivo declarados antes do chat.
+- **LearningSignal (planeado, P7):** sinais extraídos da conversa (`subject`, `topic`, `painPoint`, `confidence`, `evidence`).
+- **StudentPlan (planeado, P7):** plano adaptativo por aluno (janela semanal, prioridades e tarefas sugeridas).
 
 ---
 
@@ -65,6 +68,9 @@ Prefixo sugerido: `/api/v1`. Autenticação: Bearer session ou cookie httpOnly.
 | POST | `/conversations/:id/messages` | Envia mensagem do usuário; resposta pode ser SSE/stream |
 | POST | `/billing/checkout` | Inicia checkout (retorna URL) — no código: `/api/v1/billing/checkout` (placeholder 501 até P4) |
 | POST | `/webhooks/stripe` | Webhooks — no código: `/api/v1/webhooks/stripe` (placeholder 501 até P4) |
+| POST | `/study-sessions` | (Planeado P7) Inicia sessão guiada de estudo com matéria/tópico/objetivo |
+| POST | `/study-sessions/:id/signals` | (Planeado P7) Persiste sinais de dor extraídos da sessão |
+| GET | `/student-plan` | (Planeado P7) Retorna plano adaptativo atual do aluno |
 
 Detalhar schemas JSON em um OpenAPI/Swagger na Fase 1–2 do código.
 
@@ -74,7 +80,10 @@ Detalhar schemas JSON em um OpenAPI/Swagger na Fase 1–2 do código.
 
 1. Cliente envia texto + `conversation_id` (ou cria nova).
 2. API carrega histórico recente (janela de tokens limitada).
-3. API monta mensagens: `system` (prompt pedagógico) + histórico + nova mensagem.
+3. API (P7) injeta também contexto de sessão guiada e plano atual do aluno quando disponíveis.
+4. API monta mensagens: `system` (prompt pedagógico) + histórico + nova mensagem.
+5. Chat segue estados pedagógicos (diagnóstico -> explicação -> prática -> verificação -> próximo passo).
+6. (Opcional) Extração estruturada de sinais ao final da sessão/bloco (dor principal, subtema, confiança).
 4. (Opcional) Pré-moderação do input.
 5. Chamada ao LLM com streaming.
 6. (Opcional) Pós-moderação do output; se falhar, substituir por mensagem segura e logar evento.
@@ -128,6 +137,9 @@ Resposta do assistente no MVP de código: **JSON na mesma requisição** `POST .
 ## 9. Evolução técnica planejada
 
 - **Perfil pedagógico no registo (futuro, extensão P2):** campos no `User` ou tabela `UserLearningProfile` (dificuldades, objectivos, interesses); validação e i18n na UI de `/register` e `/settings`.
+- **Tutor guiado por sessão (novo, P7):** antes de conversar, o aluno inicia sessão com matéria/tópico/dificuldade declarada/objetivo; chat opera em modo professor com fluxo pedagógico explícito e menor abertura a perguntas fora do contexto da sessão.
+- **Sinais de dor estruturados (novo, P7):** pipeline de extração por JSON ao fim de sessão ou por bloco de conversa, com campos normalizados (tema, dor, confiança, evidência) para alimentar personalização.
+- **Plano adaptativo por aluno (novo, P7):** composição contínua de próximos passos com base no perfil declarado + sinais extraídos + histórico recente, exibindo transparência na UI (“o que a IA entendeu de dificuldade”).
 - **Score por assunto (futuro, P6):** entidade ou série temporal (ex.: `UserTopicProgress` / snapshots) actualizada por **job de análise** sobre mensagens do utilizador + ligação aos tópicos declarados; API de leitura para UI e regras de não-exposição a terceiros sem consentimento.
 - **Perguntas diárias (futuro, P6):** job agendado ou fila que, por utilizador e **janela calendário (dia)**, gera um lote de perguntas via LLM com contexto derivado das **mensagens persistidas** (`Conversation` / `Message`), **perfil declarado** e heurísticas de dificuldade; expor em API dedicada e UI de “desafio do dia”; rever LGPD (agregação, retenção, opt-in) em `05-ia-seguranca-e-conformidade.md`.
 - **RAG (opcional):** material didático proprietário indexado para respostas ancoradas em fontes — documentar em fase futura.
