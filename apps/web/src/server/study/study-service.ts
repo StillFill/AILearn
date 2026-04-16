@@ -170,6 +170,20 @@ export async function listRecentSignals(ownerUserId: string, take = 8): Promise<
   return rows.map(toDomainSignal);
 }
 
+/** Sinais já registados nesta sessão (para plano adaptativo no prompt do tutor). */
+export async function listSignalsForSession(
+  ownerUserId: string,
+  sessionId: string,
+  take = 16,
+): Promise<LearningSignal[]> {
+  const rows = await prisma.learningSignal.findMany({
+    where: { ownerUserId, sessionId },
+    orderBy: { createdAt: "desc" },
+    take,
+  });
+  return rows.map(toDomainSignal);
+}
+
 function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }

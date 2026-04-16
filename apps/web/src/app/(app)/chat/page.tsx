@@ -227,7 +227,7 @@ export default function ChatIndexPage() {
               ) : null}
               {signalsForHeader.length > 0 ? (
                 <span className="w-full text-zinc-500 dark:text-zinc-400">
-                  Dados encontrados na sessão:
+                  Inferido do que você escreveu (não só da explicação do tutor):
                 </span>
               ) : null}
               {signalsForHeader.map((signal) => (

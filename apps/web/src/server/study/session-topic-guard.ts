@@ -1,5 +1,8 @@
 import type { LearningSession } from "@/domain/study";
 
+/** Confiança mínima (0–1) para bloquear mensagens claramente fora do tema da sessão guiada. */
+export const SESSION_TOPIC_OFF_TOPIC_BLOCK_MIN_CONFIDENCE = 0.85;
+
 const SUBJECT_KEYWORDS: Record<string, string[]> = {
   matemática: ["matemática", "matematica", "equação", "equacao", "logaritmo", "álgebra", "algebra"],
   português: ["português", "portugues", "gramática", "gramatica", "redação", "redacao", "interpretação"],

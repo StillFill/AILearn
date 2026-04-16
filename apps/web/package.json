@@ -10,7 +10,8 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:clean-sessions-and-chats": "node scripts/clean-sessions-and-chats.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

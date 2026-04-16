@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { AdaptivePlan } from "@/domain/study";
 import { jsonError } from "@/lib/api/errors";
 import { requireSessionUserId } from "@/server/auth-context";
 import {
@@ -12,10 +13,15 @@ import { checkRateLimit, rateLimitKey } from "@/server/rate-limit";
 import { extractSignalsFromMessageEnhanced } from "@/server/study/signal-extractor";
 import {
   addLearningSignals,
+  buildAdaptivePlan,
   getStudySessionById,
+  listSignalsForSession,
   refreshSessionProgress,
 } from "@/server/study/study-service";
-import { classifySessionTopicMatch } from "@/server/study/session-topic-guard";
+import {
+  classifySessionTopicMatch,
+  SESSION_TOPIC_OFF_TOPIC_BLOCK_MIN_CONFIDENCE,
+} from "@/server/study/session-topic-guard";
 
 type Ctx = { params: Promise<{ conversationId: string }> };
 const encoder = new TextEncoder();
@@ -93,7 +99,8 @@ export async function POST(request: NextRequest, context: Ctx) {
       session: activeSession,
       userContent: content,
     });
-    const shouldBlock = decision.onTopic === false && decision.confidence >= 0.75;
+    const shouldBlock =
+      decision.onTopic === false && decision.confidence >= SESSION_TOPIC_OFF_TOPIC_BLOCK_MIN_CONFIDENCE;
     if (shouldBlock) {
     const assistantMsg = await appendMessage(
       conversationId,
@@ -142,6 +149,18 @@ export async function POST(request: NextRequest, context: Ctx) {
       writeEvent("start", { userMessage: userMsg });
 
       try {
+        let adaptivePlan: AdaptivePlan | null = null;
+        if (activeSession) {
+          const sessionSignals = await listSignalsForSession(
+            ownerUserId,
+            activeSession.id,
+            16,
+          );
+          if (sessionSignals.length > 0) {
+            adaptivePlan = buildAdaptivePlan(sessionSignals);
+          }
+        }
+
         const generator = streamAssistantReply({
           priorMessages: priorForLlm,
           userContent: content,
@@ -153,6 +172,7 @@ export async function POST(request: NextRequest, context: Ctx) {
                 goal: activeSession.goal,
               }
             : null,
+          adaptivePlan,
         });
 
         let combined = "";
